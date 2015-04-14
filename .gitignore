@@ -33,3 +33,6 @@
 
 # Dependencies
 deps/
+
+# Vim
+*~
