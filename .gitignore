@@ -31,8 +31,10 @@
 # Debug files
 *.dSYM/
 
-# Dependencies
-deps/
-
 # Vim
 *~
+
+# Rebar / Erlang Folders
+deps/
+ebin/
+priv/

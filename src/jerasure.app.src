@@ -1,0 +1,12 @@
+{application, jerasure,
+[
+    {description, "Jerasure Library Binding"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {applications, [
+                    kernel,
+                    stdlib
+                    ]},
+    {env, []}
+]
+}.
