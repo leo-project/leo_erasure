@@ -5,7 +5,7 @@ test `basename $PWD` != "c_src" && cd c_src
 cd ../deps/gfcomplete
 export GFP=`pwd`
 if [ ! -f src/.libs/libgf_complete.so ]; then
-    autoreconf --install
+    ./autogen.sh
     ./configure
     make -j4
 fi

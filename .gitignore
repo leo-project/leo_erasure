@@ -39,3 +39,6 @@ deps/
 ebin/
 priv/
 blocks/
+
+# Testing
+*.dec

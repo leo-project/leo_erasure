@@ -1,6 +1,7 @@
 -module(jerasure).
 
--export([encode_test/1,encode_test/2, decode_test/2]).
+-export([encode/1,decode/2]).
+-export([encode_test/2, decode_test/3]).
 
 -on_load(init/0).
 
@@ -8,8 +9,8 @@
 -define(LIBNAME, jerasure_drv).
 -define(BLOCKSTOR, "blocks/").
 
--ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
+-ifdef(TEST).
 -endif.
 
 init() ->
@@ -47,11 +48,39 @@ encode(FileName) ->
     end,
     write_blocks(FileName, Blocks, 0).
 
+check_available_blocks(_, -1, List) ->
+    List;
+check_available_blocks(FileName, Cnt, List) ->
+    BlockName = FileName ++ "." ++ integer_to_list(Cnt),
+    BlockPath = filename:join(?BLOCKSTOR, BlockName),
+    case filelib:is_regular(BlockPath) of      
+        true ->
+            check_available_blocks(FileName, Cnt - 1, [Cnt | List]);
+        _ ->
+            check_available_blocks(FileName, Cnt - 1, List)
+    end.
+
+read_blocks(FileName, AvailableList) ->
+    read_blocks(FileName, lists:reverse(AvailableList), []).
+read_blocks(_, [], BlockList) ->
+    BlockList;
+read_blocks(FileName, [Cnt | T], BlockList) ->
+    BlockName = FileName ++ "." ++ integer_to_list(Cnt),
+    BlockPath = filename:join(?BLOCKSTOR, BlockName),
+    {ok, Block} = file:read_file(BlockPath),
+    read_blocks(FileName, T, [Block | BlockList]).
+
+
 decode(FileName, FileSize) ->
-    
+    AvailableList = check_available_blocks(FileName, 6, []),
+    BlockList = read_blocks(FileName, AvailableList),
+    FileContent = decode_test(AvailableList, BlockList, FileSize),
+    DecodeName = FileName ++ ".dec",
+    io:format("Decoded file at ~p~n", [DecodeName]),
+    file:write_file(DecodeName, FileContent).
 
 encode_test(_,_) ->
     exit(nif_library_not_loaded).
 
-decode_test(_,_) ->
+decode_test(_,_,_) ->
     exit(nif_library_not_loaded).
