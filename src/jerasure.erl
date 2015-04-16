@@ -2,7 +2,7 @@
 
 -export([encode_file/1,decode_file/2]).
 -export([encode_test/2, decode_test/3]).
--export([encode/4]).
+-export([encode/4, decode/5]).
 
 -on_load(init/0).
 
@@ -77,13 +77,17 @@ decode_file(FileName, FileSize) ->
     AvailableList = check_available_blocks(FileName, 14, []),
     BlockList = read_blocks(FileName, AvailableList),
    % FileContent = decode_test(AvailableList, BlockList, FileSize),
-    {Time, FileContent} = timer:tc(?MODULE, decode_test, [AvailableList, BlockList, FileSize]),
+%    {Time, FileContent} = timer:tc(?MODULE, decode_test, [AvailableList, BlockList, FileSize]),
+    {Time, FileContent} = timer:tc(?MODULE, decode, [BlockList, AvailableList, FileSize, cauchyrs, {10, 4, 8}]),
     io:format("Duration ~p~n", [Time]),
     DecodeName = FileName ++ ".dec",
     io:format("Decoded file at ~p~n", [DecodeName]),
     file:write_file(DecodeName, FileContent).
 
-encode(_,_,_,_)->
+encode(_,_,_,_) ->
+    exit(nif_library_not_loaded).
+
+decode(_,_,_,_,_) ->
     exit(nif_library_not_loaded).
 
 encode_test(_,_) ->
