@@ -40,7 +40,9 @@ encode(FileName) ->
     case file:read_file(FileName) of
         {ok, FileContent} ->
             io:format("File Content Length: ~p~n", [byte_size(FileContent)]),
-            Blocks = encode_test(FileContent, byte_size(FileContent)),
+%%            Blocks = encode_test(FileContent, byte_size(FileContent)),
+            {Time, Blocks} = timer:tc(?MODULE, encode_test, [FileContent, byte_size(FileContent)]),
+            io:format("Duration ~p us~n", [Time]),
             io:format("Number of Blocks: ~p~n", [length(Blocks)]);
         {error, Reason} ->
             Blocks = [],
@@ -72,9 +74,11 @@ read_blocks(FileName, [Cnt | T], BlockList) ->
 
 
 decode(FileName, FileSize) ->
-    AvailableList = check_available_blocks(FileName, 6, []),
+    AvailableList = check_available_blocks(FileName, 14, []),
     BlockList = read_blocks(FileName, AvailableList),
-    FileContent = decode_test(AvailableList, BlockList, FileSize),
+   % FileContent = decode_test(AvailableList, BlockList, FileSize),
+    {Time, FileContent} = timer:tc(?MODULE, decode_test, [AvailableList, BlockList, FileSize]),
+    io:format("Duration ~p~n", [Time]),
     DecodeName = FileName ++ ".dec",
     io:format("Decoded file at ~p~n", [DecodeName]),
     file:write_file(DecodeName, FileContent).

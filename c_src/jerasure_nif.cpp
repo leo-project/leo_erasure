@@ -9,114 +9,24 @@ using namespace std;
 #include "jerasure.h"
 #include "erl_nif.h"
 
+#include "common.h"
+
 #include "cauchy.h"
+
+#include "cauchycoding.h"
 
 typedef enum {
     RS_CAUCHY = 1,
 } CodingType;
 
-typedef struct {
-    size_t size;
-    unsigned char* data;
-} BlockEntry;
-
-uint32_t roundTo(uint32_t numToRound, uint32_t multiple) {
-    if (multiple == 0) {
-        return numToRound;
-    }
-
-    uint32_t remainder = numToRound % multiple;
-    if (remainder == 0)
-        return numToRound;
-    return numToRound + multiple - remainder;
-}
-
 vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize, int k, int m, int w, CodingType coding) {
-    vector<ErlNifBinary> allBlockBinary;
-    int *matrix = cauchy_good_general_coding_matrix(k, m, w);
-    int *bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
-    int **smart = jerasure_smart_bitmatrix_to_schedule(k, m, w, bitmatrix);
-
-    long long blockSize = roundTo((roundTo(dataSize, k*w) / (k*w)), 4) * w;
-
-    char** dataBlocks = (char**)enif_alloc(sizeof(char*) * k);
-    for(int i = 0; i < k - 1; ++i) {
-        ErlNifBinary dataBlock;
-        enif_alloc_binary(blockSize, &dataBlock);
-        memcpy(dataBlock.data, data + blockSize * i, blockSize);
-        allBlockBinary.push_back(dataBlock);
-        dataBlocks[i] = (char*)dataBlock.data;
-    }
-
-    // Padding Last Block
-    ErlNifBinary lastBlock;
-    enif_alloc_binary(blockSize, &lastBlock);
-    memset(lastBlock.data, 0, blockSize);
-    memcpy(lastBlock.data, data + blockSize * (k - 1), dataSize - (blockSize * (k - 1)));
-    allBlockBinary.push_back(lastBlock);
-    dataBlocks[k - 1] = (char*)lastBlock.data;
-
-    char** codeBlocks = (char**)enif_alloc(sizeof(char*) * m);
-    for(int i = 0; i < m; ++i) {
-        ErlNifBinary codeBlock;
-        enif_alloc_binary(blockSize, &codeBlock);
-        allBlockBinary.push_back(codeBlock);
-        codeBlocks[i] = (char*)codeBlock.data;
-    }
-
-    jerasure_schedule_encode(k, m, w, smart, dataBlocks, codeBlocks, blockSize, blockSize / w);
-
-    enif_free(dataBlocks);
-    enif_free(codeBlocks);
-    return allBlockBinary;
+    CauchyCoding cauchyCoder(k,m,w);
+    return cauchyCoder.doEncode(data, dataSize);
 } 
 
 ErlNifBinary doDecode(vector<int> availList, vector<ErlNifBinary> blockList, long long fileSize, int k, int m, int w, CodingType coding) {
-    ErlNifBinary file;
-    char** dataBlocks = (char**)enif_alloc(sizeof(char*) * k);
-    char** codeBlocks = (char**)enif_alloc(sizeof(char*) * m);
-    int erasures[k + m];
-    size_t blockSize = blockList[0].size;
-    set<int> availSet(availList.begin(), availList.end());
-
-    int j = 0;
-    for(int i = 0; i < k + m; ++i) {
-        i < k ? dataBlocks[i] = (char*)enif_alloc(blockSize) : codeBlocks[i - k] = 
-                        (char*)enif_alloc(blockSize);
-        if (availSet.count(i) == 0) {
-            erasures[j++] = i;
-        }
-    }
-    erasures[j] = -1;
-
-
-    for(unsigned int i = 0; i < blockList.size(); ++i) {
-        int blockId = availList[i];
-        if ((int)blockId < k) {
-            memcpy(dataBlocks[blockId], blockList[i].data, blockSize);
-        } else {
-            memcpy(codeBlocks[blockId - k], blockList[i].data, blockSize);
-        }
-    }
-
-    int *matrix = cauchy_good_general_coding_matrix(k, m, w);
-    int *bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
-    jerasure_schedule_decode_lazy(k, m, w, bitmatrix, erasures, dataBlocks, codeBlocks, blockSize, blockSize / w, 1);
-
-    enif_alloc_binary(fileSize, &file);
-    size_t offset = 0;
-    for(int i = 0; i < k - 1; ++i) {
-        memcpy(file.data + offset, dataBlocks[i], blockSize);
-        offset += blockSize;
-    }
-    memcpy(file.data + offset, dataBlocks[k - 1], fileSize - offset);
-
-    for(int i = 0; i < k + m; ++i) {
-        i < k ? enif_free(dataBlocks[i]) : enif_free(codeBlocks[i - k]);
-    }
-    enif_free(dataBlocks);
-    enif_free(codeBlocks);
-    return file;
+    CauchyCoding cauchyCoder(k,m,w);
+    return cauchyCoder.doDecode(blockList, availList, fileSize); 
 }
 
 static ERL_NIF_TERM 
@@ -176,8 +86,8 @@ decode_test(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     vector<int> availList2 (availList1, availList1 + listLen);
     vector<ErlNifBinary> blockList2 (blockList1, blockList1 + listLen);
 
-    int k = 4;
-    int m = 2;
+    int k = 10;
+    int m = 4;
 
     ErlNifBinary file = doDecode(availList2, blockList2, fileSize, k, m, 8, RS_CAUCHY);
     return enif_make_binary(env, &file);
@@ -191,8 +101,8 @@ encode_test(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     }
     size_t totalSize = in.size;
     unsigned char* data = in.data;
-    int k = 4;
-    int m = 2;
+    int k = 10;
+    int m = 4;
 
     vector<ErlNifBinary> ret = doEncode(data, totalSize, k, m, 8, RS_CAUCHY);
     
