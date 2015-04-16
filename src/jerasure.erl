@@ -1,7 +1,8 @@
 -module(jerasure).
 
--export([encode/1,decode/2]).
+-export([encode_file/1,decode_file/2]).
 -export([encode_test/2, decode_test/3]).
+-export([encode/4]).
 
 -on_load(init/0).
 
@@ -36,12 +37,11 @@ write_blocks(FileName, [H | T], Cnt) ->
     file:write_file(BlockPath, H),
     write_blocks(FileName, T, Cnt + 1).
 
-encode(FileName) ->
+encode_file(FileName) ->
     case file:read_file(FileName) of
         {ok, FileContent} ->
             io:format("File Content Length: ~p~n", [byte_size(FileContent)]),
-%%            Blocks = encode_test(FileContent, byte_size(FileContent)),
-            {Time, Blocks} = timer:tc(?MODULE, encode_test, [FileContent, byte_size(FileContent)]),
+            {Time, Blocks} = timer:tc(?MODULE, encode, [FileContent, byte_size(FileContent), cauchyrs, {10, 4, 8}]),
             io:format("Duration ~p us~n", [Time]),
             io:format("Number of Blocks: ~p~n", [length(Blocks)]);
         {error, Reason} ->
@@ -73,7 +73,7 @@ read_blocks(FileName, [Cnt | T], BlockList) ->
     read_blocks(FileName, T, [Block | BlockList]).
 
 
-decode(FileName, FileSize) ->
+decode_file(FileName, FileSize) ->
     AvailableList = check_available_blocks(FileName, 14, []),
     BlockList = read_blocks(FileName, AvailableList),
    % FileContent = decode_test(AvailableList, BlockList, FileSize),
@@ -82,6 +82,9 @@ decode(FileName, FileSize) ->
     DecodeName = FileName ++ ".dec",
     io:format("Decoded file at ~p~n", [DecodeName]),
     file:write_file(DecodeName, FileContent).
+
+encode(_,_,_,_)->
+    exit(nif_library_not_loaded).
 
 encode_test(_,_) ->
     exit(nif_library_not_loaded).

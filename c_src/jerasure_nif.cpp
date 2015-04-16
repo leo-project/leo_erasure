@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <vector>
 #include <set>
+#include <string>
 using namespace std;
 
 #include "jerasure.h"
@@ -16,17 +17,75 @@ using namespace std;
 #include "cauchycoding.h"
 
 typedef enum {
-    RS_CAUCHY = 1,
+    INVALID_CODING = -1,
+    CAUCHY_RS = 1,
 } CodingType;
 
 vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize, int k, int m, int w, CodingType coding) {
-    CauchyCoding cauchyCoder(k,m,w);
-    return cauchyCoder.doEncode(data, dataSize);
+    Coding* coder;
+    switch (coding) {
+        case CAUCHY_RS:
+            coder = new CauchyCoding(k,m,w);
+            break;
+        default:
+            break;
+    }
+    return coder->doEncode(data, dataSize);
 } 
 
 ErlNifBinary doDecode(vector<int> availList, vector<ErlNifBinary> blockList, long long fileSize, int k, int m, int w, CodingType coding) {
-    CauchyCoding cauchyCoder(k,m,w);
-    return cauchyCoder.doDecode(blockList, availList, fileSize); 
+    Coding* coder;
+    switch (coding) {
+        case CAUCHY_RS:
+            coder = new CauchyCoding(k,m,w);
+            break;
+        default:
+            break;
+    }
+    return coder->doDecode(blockList, availList, fileSize); 
+}
+
+CodingType getCoding(char* codingAtom) {
+    string atomString(codingAtom);
+    if (atomString == "cauchyrs")
+        return CAUCHY_RS;
+    return INVALID_CODING;
+}
+
+static ERL_NIF_TERM
+encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    ErlNifBinary in;
+    if(!enif_inspect_iolist_as_binary(env, argv[0], &in)) {
+        return enif_make_badarg(env);
+    }
+    size_t dataSize = in.size;
+    unsigned char* data = in.data;
+
+    char atomString[64];
+    if(!enif_get_atom(env, argv[2], atomString, 64, ERL_NIF_LATIN1)) {
+        return enif_make_badarg(env);
+    }
+    
+    CodingType coding = getCoding(atomString);
+    /// TODO: Error Detection
+
+    const ERL_NIF_TERM* tuple;
+    int cnt;
+    if(!enif_get_tuple(env, argv[3], &cnt, &tuple)) {
+        return enif_make_badarg(env);
+    }
+    int k,m,w;
+    enif_get_int(env, tuple[0], &k);
+    enif_get_int(env, tuple[1], &m);
+    enif_get_int(env, tuple[2], &w);
+
+    vector<ErlNifBinary> blocks = doEncode(data, dataSize, k, m, w, coding);
+
+    ERL_NIF_TERM retArr[blocks.size()];
+    for(unsigned int i = 0; i < blocks.size(); ++i) {
+        retArr[i] = enif_make_binary(env, &blocks[i]);
+    }
+    return enif_make_list_from_array(env, retArr, blocks.size());
 }
 
 static ERL_NIF_TERM 
@@ -89,7 +148,7 @@ decode_test(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     int k = 10;
     int m = 4;
 
-    ErlNifBinary file = doDecode(availList2, blockList2, fileSize, k, m, 8, RS_CAUCHY);
+    ErlNifBinary file = doDecode(availList2, blockList2, fileSize, k, m, 8, CAUCHY_RS);
     return enif_make_binary(env, &file);
 }
 
@@ -104,10 +163,9 @@ encode_test(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     int k = 10;
     int m = 4;
 
-    vector<ErlNifBinary> ret = doEncode(data, totalSize, k, m, 8, RS_CAUCHY);
+    vector<ErlNifBinary> ret = doEncode(data, totalSize, k, m, 8, CAUCHY_RS);
     
     ERL_NIF_TERM retArr[k + m];
-//    for(int i = 0; i < k + m; ++i) {
     for(unsigned int i = 0; i < ret.size(); ++i) {
         retArr[i] = enif_make_binary(env, &ret[i]);
     }
@@ -115,6 +173,7 @@ encode_test(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
 }
 
 static ErlNifFunc nif_funcs[] = {
+    {"encode", 4, encode},
     {"encode_test", 2, encode_test},
     {"decode_test", 3, decode_test}
 };
