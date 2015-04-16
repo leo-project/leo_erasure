@@ -33,6 +33,7 @@
 
 # Vim
 *~
+*.swp
 
 # Rebar / Erlang Folders
 deps/
