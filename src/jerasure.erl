@@ -2,6 +2,7 @@
 
 -export([encode_file/1,decode_file/2]).
 -export([encode/4, decode/5]).
+-export([benchmark_encode/4]).
 
 -on_load(init/0).
 
@@ -75,13 +76,32 @@ read_blocks(FileName, [Cnt | T], BlockList) ->
 decode_file(FileName, FileSize) ->
     AvailableList = check_available_blocks(FileName, 14, []),
     BlockList = read_blocks(FileName, AvailableList),
-    {Time, FileContent} = timer:tc(?MODULE, decode, [BlockList, AvailableList, FileSize, cauchyrs, {10, 4, 8}]),
+    {Time, FileContent} = timer:tc(?MODULE, decode, [BlockList, AvailableList, FileSize, cauchyrs, {10, 4, 4}]),
     io:format("Duration ~p~n", [Time]),
     DecodeName = FileName ++ ".dec",
     io:format("Decoded file at ~p~n", [DecodeName]),
     file:write_file(DecodeName, FileContent).
 
-encode(_,_,_,_) ->
+repeat_encode(_, _, _, _, 0)->
+    ok;
+repeat_encode(Bin, BinSize, Coding, Params, Cnt)->
+    io:format("Encode Round Remained: ~p~n", [Cnt]),
+    encode(Bin, BinSize, Coding, Params),
+    repeat_encode(Bin, BinSize, Coding, Params, Cnt - 1).
+benchmark_encode(TotalSizeM, ChunkSizeM, Coding, Params) ->
+    TotalSize = TotalSizeM * 1024 * 1024,
+    ChunkSize = ChunkSizeM * 1024 * 1024,
+    ChunkSizeBits = ChunkSize * 8,
+    Bin = << 0:ChunkSizeBits>>,
+    Start = now(),
+    repeat_encode(Bin, ChunkSize, Coding, Params, TotalSize div ChunkSize),
+    End = now(),
+    Time = timer:now_diff(End, Start),
+    Rate = TotalSizeM / Time * 1000 * 1000,
+    io:format("Encode Rate: ~p MB/s~n", [Rate]),
+    Time.
+
+encode(_Bin,_TotalSize,_Coding,_Params) ->
     exit(nif_library_not_loaded).
 
 decode(_,_,_,_,_) ->

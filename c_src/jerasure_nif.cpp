@@ -7,10 +7,12 @@ using namespace std;
 #include "erl_nif.h"
 
 #include "cauchycoding.h"
+#include "rscoding.h"
 
 typedef enum {
     INVALID_CODING = -1,
     CAUCHY_RS = 1,
+    VAND_RS = 2,
 } CodingType;
 
 vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize, int k, int m, int w, CodingType coding) {
@@ -18,6 +20,9 @@ vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize, int k, int m
     switch (coding) {
         case CAUCHY_RS:
             coder = new CauchyCoding(k,m,w);
+            break;
+        case VAND_RS:
+            coder = new RSCoding(k,m,w);
             break;
         default:
             break;
@@ -31,6 +36,9 @@ ErlNifBinary doDecode(vector<int> availList, vector<ErlNifBinary> blockList, lon
         case CAUCHY_RS:
             coder = new CauchyCoding(k,m,w);
             break;
+        case VAND_RS:
+            coder = new RSCoding(k,m,w);
+            break;
         default:
             break;
     }
@@ -41,6 +49,8 @@ CodingType getCoding(char* codingAtom) {
     string atomString(codingAtom);
     if (atomString == "cauchyrs")
         return CAUCHY_RS;
+    if (atomString == "vandrs")
+        return VAND_RS;
     return INVALID_CODING;
 }
 
