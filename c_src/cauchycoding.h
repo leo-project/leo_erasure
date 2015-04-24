@@ -1,5 +1,5 @@
-#ifndef __Cauchy_CODING_H__
-#define __Cauchy_CODING_H__
+#ifndef __CAUCHY_CODING_H__
+#define __CAUCHY_CODING_H__
 
 #include "coding.h"
 
