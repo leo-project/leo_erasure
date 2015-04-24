@@ -8,8 +8,6 @@
 #include "cauchy.h"
 
 vector<ErlNifBinary> CauchyCoding::doEncode(unsigned char* data, size_t dataSize) {
-//vector<BlockEntry> CauchyCoding::doEncode(unsigned char* data, size_t dataSize) {
-//    vector<BlockEntry> allBlockEntry;
     vector<ErlNifBinary> allBlockEntry;
 
     int *matrix = cauchy_good_general_coding_matrix(k, m, w);
@@ -26,14 +24,6 @@ vector<ErlNifBinary> CauchyCoding::doEncode(unsigned char* data, size_t dataSize
         ErlNifBinary tmpBlock;
         enif_alloc_binary(blockSize, &tmpBlock);
         dataBlocks[i] = (char*)tmpBlock.data;
-        
-        /*
-        dataBlocks[i] = (char*)alloc(blockSize);
-
-        BlockEntry tmpBlock;
-        tmpBlock.data = (unsigned char*)dataBlocks[i];
-        tmpBlock.size = blockSize;
-        */
 
         allBlockEntry.push_back(tmpBlock);
 
@@ -51,14 +41,6 @@ vector<ErlNifBinary> CauchyCoding::doEncode(unsigned char* data, size_t dataSize
         enif_alloc_binary(blockSize, &tmpBlock);
         codeBlocks[i] = (char*)tmpBlock.data;
         
-        /*
-        codeBlocks[i] = (char*)alloc(blockSize);
-
-        BlockEntry tmpBlock;
-        tmpBlock.data = (unsigned char*)codeBlocks[i];
-        tmpBlock.size = blockSize;
-        */
-
         allBlockEntry.push_back(tmpBlock);
     }
 
@@ -69,7 +51,6 @@ vector<ErlNifBinary> CauchyCoding::doEncode(unsigned char* data, size_t dataSize
     return allBlockEntry;
 }
 
-//BlockEntry CauchyCoding::doDecode(vector<BlockEntry> blockList, vector<int> blockIdList, size_t dataSize) {
 ErlNifBinary CauchyCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> blockIdList, size_t dataSize) {
 
     ErlNifBinary file;

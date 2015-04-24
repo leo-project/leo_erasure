@@ -14,9 +14,6 @@ class Coding {
 
         virtual vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize) = 0;
         virtual ErlNifBinary doDecode(vector<ErlNifBinary> blockList, vector<int> blockIdList, size_t dataSize) = 0;
-
-//        virtual vector<BlockEntry> doEncode(unsigned char* data, size_t dataSize) = 0;
-//        virtual BlockEntry doDecode(vector<BlockEntry> blockList, vector<int> blockIdList, size_t dataSize) = 0;
     protected:
         int k, m, w;
 };

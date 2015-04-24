@@ -8,8 +8,6 @@
 #include "reed_sol.h"
 
 vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
-//vector<BlockEntry> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
-//    vector<BlockEntry> allBlockEntry;
     vector<ErlNifBinary> allBlockEntry;
 
     int *matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
@@ -25,14 +23,6 @@ vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
         enif_alloc_binary(blockSize, &tmpBlock);
         dataBlocks[i] = (char*)tmpBlock.data;
         
-        /*
-        dataBlocks[i] = (char*)alloc(blockSize);
-
-        BlockEntry tmpBlock;
-        tmpBlock.data = (unsigned char*)dataBlocks[i];
-        tmpBlock.size = blockSize;
-        */
-
         allBlockEntry.push_back(tmpBlock);
 
         if (i == k - 1) {
@@ -49,14 +39,6 @@ vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
         enif_alloc_binary(blockSize, &tmpBlock);
         codeBlocks[i] = (char*)tmpBlock.data;
         
-        /*
-        codeBlocks[i] = (char*)alloc(blockSize);
-
-        BlockEntry tmpBlock;
-        tmpBlock.data = (unsigned char*)codeBlocks[i];
-        tmpBlock.size = blockSize;
-        */
-
         allBlockEntry.push_back(tmpBlock);
     }
 
@@ -67,7 +49,6 @@ vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
     return allBlockEntry;
 }
 
-//BlockEntry RSCoding::doDecode(vector<BlockEntry> blockList, vector<int> blockIdList, size_t dataSize) {
 ErlNifBinary RSCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> blockIdList, size_t dataSize) {
 
     ErlNifBinary file;
