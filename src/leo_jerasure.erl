@@ -51,7 +51,6 @@ init() ->
                  Dir ->
                      filename:join(Dir, ?LIBNAME)
              end,
-    filelib:ensure_dir(?BLOCKSTOR),
     erlang:load_nif(SoName, 0).
 
 
@@ -80,6 +79,7 @@ encode_file(FileName) ->
             Blocks = [],
             erlang:error(Reason)
     end,
+    filelib:ensure_dir(?BLOCKSTOR),
     write_blocks(FileName, Blocks, 0).
 
 
