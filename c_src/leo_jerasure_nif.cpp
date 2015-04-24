@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <vector>
 #include <string>
+#include <stdexcept>
 using namespace std;
 
 #include "erl_nif.h"
@@ -25,6 +26,7 @@ vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize, int k, int m
             coder = new RSCoding(k,m,w);
             break;
         default:
+            throw std::invalid_argument("Invalid Coding");
             break;
     }
     return coder->doEncode(data, dataSize);
@@ -40,6 +42,7 @@ ErlNifBinary doDecode(vector<int> availList, vector<ErlNifBinary> blockList, lon
             coder = new RSCoding(k,m,w);
             break;
         default:
+            throw std::invalid_argument("Invalid Coding");
             break;
     }
     return coder->doDecode(blockList, availList, fileSize); 
