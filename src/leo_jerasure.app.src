@@ -20,7 +20,7 @@
 %% under the License.
 %%
 %%======================================================================
-{application, jerasure,
+{application, leo_jerasure,
  [
   {description, "Jerasure Library Binding"},
   {vsn, "0.1.0"},

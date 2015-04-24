@@ -19,7 +19,7 @@
 %% under the License.
 %%
 %%======================================================================
--module(jerasure).
+-module(leo_jerasure).
 
 -export([encode_file/1,decode_file/2]).
 -export([encode/4, decode/5]).
@@ -27,8 +27,8 @@
 
 -on_load(init/0).
 
--define(APPNAME, jerasure).
--define(LIBNAME, jerasure_drv).
+-define(APPNAME, leo_jerasure).
+-define(LIBNAME, leo_jerasure_drv).
 -define(BLOCKSTOR, "blocks/").
 
 -include_lib("eunit/include/eunit.hrl").

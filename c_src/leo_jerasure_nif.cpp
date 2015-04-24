@@ -153,4 +153,4 @@ static ErlNifFunc nif_funcs[] = {
     {"decode", 5, decode},
 };
 
-ERL_NIF_INIT(jerasure, nif_funcs, NULL, NULL, NULL, NULL)
+ERL_NIF_INIT(leo_jerasure, nif_funcs, NULL, NULL, NULL, NULL)
