@@ -46,6 +46,9 @@ vector<ErlNifBinary> CauchyCoding::doEncode(unsigned char* data, size_t dataSize
 
     jerasure_schedule_encode(k, m, w, smart, dataBlocks, codeBlocks, blockSize, blockSize / w);
 
+    jerasure_free_schedule(smart);
+    free(matrix);
+    free(bitmatrix);
     dealloc(dataBlocks);
     dealloc(codeBlocks);
     return allBlockEntry;
@@ -96,6 +99,9 @@ ErlNifBinary CauchyCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> 
     for(int i = 0; i < k + m; ++i) {
         i < k ? dealloc(dataBlocks[i]) : dealloc(codeBlocks[i - k]);
     }
+
+    free(matrix);
+    free(bitmatrix);
     dealloc(dataBlocks);
     dealloc(codeBlocks);
     return file;

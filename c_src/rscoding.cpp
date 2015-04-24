@@ -44,6 +44,7 @@ vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
 
     jerasure_matrix_encode(k, m, w, matrix, dataBlocks, codeBlocks, blockSize);
 
+    free(matrix);
     dealloc(dataBlocks);
     dealloc(codeBlocks);
     return allBlockEntry;
@@ -93,6 +94,8 @@ ErlNifBinary RSCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> bloc
     for(int i = 0; i < k + m; ++i) {
         i < k ? dealloc(dataBlocks[i]) : dealloc(codeBlocks[i - k]);
     }
+
+    free(matrix);
     dealloc(dataBlocks);
     dealloc(codeBlocks);
     return file;

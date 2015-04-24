@@ -35,7 +35,7 @@
 -ifdef(TEST).
 -endif.
 
--define(ECODE_CAUCHYRS, {10, 4, 8}).
+-define(ECODE_VANDRS, {10, 4, 8}).
 
 
 %% @doc Initialize
@@ -73,7 +73,7 @@ encode_file(FileName) ->
         {ok, FileContent} ->
             io:format("File Content Length: ~p~n", [byte_size(FileContent)]),
             {Time, Blocks} = timer:tc(?MODULE, encode, [FileContent, byte_size(FileContent),
-                                                        cauchyrs, ?ECODE_CAUCHYRS]),
+                                                        vandrs, ?ECODE_VANDRS]),
             io:format("Duration ~p us~n", [Time]),
             io:format("Number of Blocks: ~p~n", [length(Blocks)]);
         {error, Reason} ->
@@ -116,7 +116,7 @@ read_blocks(FileName, [Cnt | T], BlockList) ->
 decode_file(FileName, FileSize) ->
     AvailableList = check_available_blocks(FileName, 14, []),
     BlockList = read_blocks(FileName, AvailableList),
-    {Time, FileContent} = timer:tc(?MODULE, decode, [BlockList, AvailableList, FileSize, cauchyrs, {10, 4, 4}]),
+    {Time, FileContent} = timer:tc(?MODULE, decode, [BlockList, AvailableList, FileSize, vandrs, ?ECODE_VANDRS]),
     io:format("Duration ~p~n", [Time]),
     DecodeName = FileName ++ ".dec",
     io:format("Decoded file at ~p~n", [DecodeName]),
