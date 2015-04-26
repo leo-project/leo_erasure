@@ -22,6 +22,7 @@
 -module(leo_jerasure).
 
 -export([encode_file/1,decode_file/2]).
+-export([encode_file/3,decode_file/4]).
 -export([encode/4, decode/5]).
 -export([benchmark_encode/4]).
 
@@ -35,7 +36,8 @@
 -ifdef(TEST).
 -endif.
 
--define(ECODE_VANDRS, {10, 4, 8}).
+-define(ECODE_CLASS, vandrs).
+-define(ECODE_PARAMS, {10, 4, 8}).
 
 
 %% @doc Initialize
@@ -68,11 +70,13 @@ write_blocks(FileName, [H | T], Cnt) ->
 %% @doc
 %% @private
 encode_file(FileName) ->
+	encode_file(FileName, ?ECODE_CLASS, ?ECODE_PARAMS).
+encode_file(FileName, Coding, CodingParams) ->
     case file:read_file(FileName) of
         {ok, FileContent} ->
             io:format("File Content Length: ~p~n", [byte_size(FileContent)]),
             {Time, Blocks} = timer:tc(?MODULE, encode, [FileContent, byte_size(FileContent),
-                                                        vandrs, ?ECODE_VANDRS]),
+                                                        Coding, CodingParams]),
             io:format("Duration ~p us~n", [Time]),
             io:format("Number of Blocks: ~p~n", [length(Blocks)]);
         {error, Reason} ->
@@ -114,9 +118,11 @@ read_blocks(FileName, [Cnt | T], BlockList) ->
 %% @doc
 %% @private
 decode_file(FileName, FileSize) ->
+	decode_file(FileName, FileSize, ?ECODE_CLASS, ?ECODE_PARAMS).
+decode_file(FileName, FileSize, Coding, CodingParams) ->
     AvailableList = check_available_blocks(FileName, 14, []),
     BlockList = read_blocks(FileName, AvailableList),
-    {Time, FileContent} = timer:tc(?MODULE, decode, [BlockList, AvailableList, FileSize, vandrs, ?ECODE_VANDRS]),
+    {Time, FileContent} = timer:tc(?MODULE, decode, [BlockList, AvailableList, FileSize, Coding, CodingParams]),
     io:format("Duration ~p~n", [Time]),
     DecodeName = FileName ++ ".dec",
     io:format("Decoded file at ~p~n", [DecodeName]),

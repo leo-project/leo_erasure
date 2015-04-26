@@ -54,6 +54,8 @@ vector<ErlNifBinary> LiberationCoding::doEncode(unsigned char* data, size_t data
 
 ErlNifBinary LiberationCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> blockIdList, size_t dataSize) {
 
+    int *bitmatrix = liberation_coding_bitmatrix(k, w);
+
     ErlNifBinary file;
 
     char** dataBlocks = (char**)alloc(sizeof(char*) * k);
@@ -80,8 +82,7 @@ ErlNifBinary LiberationCoding::doDecode(vector<ErlNifBinary> blockList, vector<i
         }
     }
 
-    int *bitmatrix = liberation_coding_bitmatrix(k, w);
-    jerasure_schedule_decode_lazy(k, m, w, bitmatrix, erasures, dataBlocks, codeBlocks, blockSize, blockSize / w, 1);
+    jerasure_schedule_decode_lazy(k, m, w, bitmatrix, erasures, dataBlocks, codeBlocks, blockSize, blockSize / w, 0);
 
     enif_alloc_binary(dataSize, &file);
     size_t offset = 0;

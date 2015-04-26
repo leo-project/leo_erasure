@@ -12,7 +12,7 @@ vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
 
     int *matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
 
-    size_t blockSize = roundTo((roundTo(dataSize, k*w) / (k*w)), 4) * w;
+    size_t blockSize = roundTo((roundTo(dataSize, k*w) / (k*w)), sizeof(long)) * w;
 
     char** dataBlocks = (char**)alloc(sizeof(char*) * k);
     char** codeBlocks = (char**)alloc(sizeof(char*) * m);

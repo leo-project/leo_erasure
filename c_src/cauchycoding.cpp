@@ -14,7 +14,7 @@ vector<ErlNifBinary> CauchyCoding::doEncode(unsigned char* data, size_t dataSize
     int *bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
     int **smart = jerasure_smart_bitmatrix_to_schedule(k, m, w, bitmatrix);
 
-    size_t blockSize = roundTo((roundTo(dataSize, k*w) / (k*w)), 4) * w;
+    size_t blockSize = roundTo((roundTo(dataSize, k*w) / (k*w)), sizeof(long)) * w;
 
     char** dataBlocks = (char**)alloc(sizeof(char*) * k);
     char** codeBlocks = (char**)alloc(sizeof(char*) * m);
