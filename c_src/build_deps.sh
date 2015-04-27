@@ -34,12 +34,13 @@ case "$1" in
         ;;
 
     get-deps)
+        export GFP=`pwd`"/gf-complete"
         if [ ! -d gf-complete ]; then
             git clone http://lab.jerasure.org/jerasure/gf-complete.git
             cd gf-complete
             ./autogen.sh
             ./configure
-            GFP=`pwd`
+			$MAKE
             cd ..
         fi
         if [ ! -d jerasure ]; then
@@ -47,21 +48,18 @@ case "$1" in
             cd jerasure
             autoreconf --install
             ./configure LDFLAGS=-L$GFP/src/.libs/ CPPFLAGS=-I$GFP/include
+			$MAKE
             cd ..
         fi
         ;;
 
     *)
+        export GFP=`pwd`"/gf-complete"
         if [ ! -d gf-complete ]; then
             git clone http://lab.jerasure.org/jerasure/gf-complete.git
             cd gf-complete
             ./autogen.sh
-            GFP=`pwd`
-            cd ..
-        fi
-        if [ ! -d gf-complete/src/.libs ]; then
-            cd gf-complete
-            ./configure
+			./configure
             $MAKE
             cd ..
         fi
@@ -70,10 +68,6 @@ case "$1" in
             cd jerasure
             autoreconf --install
             ./configure LDFLAGS=-L$GFP/src/.libs/ CPPFLAGS=-I$GFP/include
-            cd ..
-        fi
-        if [ ! -d jerasure/src/.libs ]; then
-            cd jerasure
             $MAKE
             cd ..
         fi
