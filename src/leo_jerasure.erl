@@ -148,7 +148,7 @@ benchmark_encode(TotalSizeM, ChunkSizeM, Coding, Params) ->
     Time = timer:now_diff(End, Start),
     Rate = TotalSizeM / Time * 1000 * 1000,
     io:format("Encode Rate: ~p MB/s~n", [Rate]),
-    Time.
+    {ok, Time}.
 
 
 %% @doc

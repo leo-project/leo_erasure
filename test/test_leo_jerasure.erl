@@ -1,4 +1,3 @@
-%% -*- mode: erlang;erlang-indent-level: 4;indent-tabs-mode: nil -*-
 %%======================================================================
 %%
 %% Leo Erasure Code
@@ -20,16 +19,16 @@
 %% under the License.
 %%
 %%======================================================================
-{application, leo_jerasure,
- [
-  {description, "Jerasure Library Binding"},
-  {vsn, "0.1.0"},
-  {modules, [leo_jerasure]},
-  {registered, []},
-  {applications, [
-                  kernel,
-                  stdlib
-                 ]},
-  {env, []}
- ]
-}.
+-module(test_leo_jerasure).
+-author("Wilson Li").
+
+-include_lib("eunit/include/eunit.hrl").
+
+-ifdef(EUNIT).
+
+bench_encode_test() ->
+    {ok, _} = leo_jerasure:benchmark_encode(100,100,vandrs,{4,2,8}),
+    {ok, _} = leo_jerasure:benchmark_encode(100,100,cauchyrs,{4,2,3}),
+    {ok, _} = leo_jerasure:benchmark_encode(100,100,liberation,{4,2,7}).
+
+-endif.
