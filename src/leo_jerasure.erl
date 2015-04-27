@@ -28,8 +28,6 @@
 
 -on_load(init/0).
 
--define(APPNAME, leo_jerasure).
--define(LIBNAME, leo_jerasure_drv).
 -define(BLOCKSTOR, "blocks/").
 
 -include_lib("eunit/include/eunit.hrl").
@@ -42,16 +40,16 @@
 
 %% @doc Initialize
 init() ->
-    SoName = case code:priv_dir(?APPNAME) of
+    SoName = case code:priv_dir(?MODULE) of
                  {error, bad_name} ->
-                     case filelib:is_dir(filename:join(["..", priv])) of
-                         true ->
-                             filename:join(["..", priv, ?LIBNAME]);
+                     case code:which(?MODULE) of
+                         Filename when is_list(Filename) ->
+                             filename:join([filename:dirname(Filename),"../priv", "leo_jerasure"]);
                          _ ->
-                             filename:join([priv, ?LIBNAME])
+                             filename:join("../priv", "leo_jerasure")
                      end;
                  Dir ->
-                     filename:join(Dir, ?LIBNAME)
+                     filename:join(Dir, "leo_jerasure")
              end,
     erlang:load_nif(SoName, 0).
 
@@ -70,7 +68,7 @@ write_blocks(FileName, [H | T], Cnt) ->
 %% @doc
 %% @private
 encode_file(FileName) ->
-	encode_file(FileName, ?ECODE_CLASS, ?ECODE_PARAMS).
+    encode_file(FileName, ?ECODE_CLASS, ?ECODE_PARAMS).
 encode_file(FileName, Coding, CodingParams) ->
     case file:read_file(FileName) of
         {ok, FileContent} ->
@@ -118,7 +116,7 @@ read_blocks(FileName, [Cnt | T], BlockList) ->
 %% @doc
 %% @private
 decode_file(FileName, FileSize) ->
-	decode_file(FileName, FileSize, ?ECODE_CLASS, ?ECODE_PARAMS).
+    decode_file(FileName, FileSize, ?ECODE_CLASS, ?ECODE_PARAMS).
 decode_file(FileName, FileSize, Coding, CodingParams) ->
     AvailableList = check_available_blocks(FileName, 14, []),
     BlockList = read_blocks(FileName, AvailableList),
