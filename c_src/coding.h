@@ -2,6 +2,7 @@
 #define __CODING_H__
 
 #include <vector>
+#include <stdexcept>
 using namespace std;
 
 #include "common.h"
@@ -10,11 +11,12 @@ using namespace std;
 
 class Coding {
     public:
-        Coding(int _k, int _m, int _w) : k(_k), m(_m), w(_w) {};
+        Coding(int _k, int _m, int _w) : k(_k), m(_m), w(_w) { checkParams(); };
 
         virtual vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize) = 0;
         virtual ErlNifBinary doDecode(vector<ErlNifBinary> blockList, vector<int> blockIdList, size_t dataSize) = 0;
     protected:
+        virtual void checkParams();
         int k, m, w;
 };
 

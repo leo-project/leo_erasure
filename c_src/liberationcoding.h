@@ -8,6 +8,8 @@ class LiberationCoding : public Coding {
         LiberationCoding(int k, int m, int w) : Coding(k, m, w) {};
         vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize);
         ErlNifBinary doDecode(vector<ErlNifBinary> blockList, vector<int> blockIdList, size_t dataSize);
+    protected:
+        void checkParams();
 };
 
 #endif

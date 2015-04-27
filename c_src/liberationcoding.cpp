@@ -7,6 +7,10 @@
 #include "jerasure.h"
 #include "liberation.h"
 
+void LiberationCoding::checkParams() {
+
+}
+
 vector<ErlNifBinary> LiberationCoding::doEncode(unsigned char* data, size_t dataSize) {
     vector<ErlNifBinary> allBlockEntry;
 

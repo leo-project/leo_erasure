@@ -7,6 +7,10 @@
 #include "jerasure.h"
 #include "cauchy.h"
 
+void CauchyCoding::checkParams() {
+   return; 
+}
+
 vector<ErlNifBinary> CauchyCoding::doEncode(unsigned char* data, size_t dataSize) {
     vector<ErlNifBinary> allBlockEntry;
 

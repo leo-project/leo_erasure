@@ -7,6 +7,10 @@
 #include "jerasure.h"
 #include "reed_sol.h"
 
+void RSCoding::checkParams() {
+    return ;
+}
+
 vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
     vector<ErlNifBinary> allBlockEntry;
 
