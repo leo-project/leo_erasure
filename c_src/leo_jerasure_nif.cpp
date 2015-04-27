@@ -131,7 +131,11 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
         availList1[i] = tmp;
     }
 
+#if SIZEOF_LONG == 8
+    unsigned long dataSize;
+#else
     uint64_t dataSize;
+#endif
     if (!enif_get_uint64(env, argv[2], &dataSize)) {
         return enif_make_badarg(env);
     }
