@@ -58,12 +58,33 @@ ErlNifBinary LiberationCoding::doDecode(vector<ErlNifBinary> blockList, vector<i
 
     ErlNifBinary file;
 
-    char** dataBlocks = (char**)alloc(sizeof(char*) * k);
-    char** codeBlocks = (char**)alloc(sizeof(char*) * m);
-    int erasures[k + m];
     size_t blockSize = blockList[0].size;
     set<int> availSet(blockIdList.begin(), blockIdList.end());
 
+    bool needFix = false;
+    for(int i = 0; i < k; ++i) 
+        if (availSet.count(i) == 0) {
+            needFix = true;
+            break;
+        }
+
+    if (!needFix) {
+        enif_alloc_binary(dataSize, &file);
+        size_t offset = 0;
+        int i = 0;
+        while(offset < dataSize) {
+            size_t copySize = min(dataSize - offset, blockSize);
+            memcpy(file.data + offset, blockList[i].data, copySize);
+            i++;
+            offset += copySize;
+        }
+        
+        return file;
+    }
+
+    char** dataBlocks = (char**)alloc(sizeof(char*) * k);
+    char** codeBlocks = (char**)alloc(sizeof(char*) * m);
+    int erasures[k + m];
     int j = 0;
     for(int i = 0; i < k + m; ++i) {
         i < k ? dataBlocks[i] = (char*)alloc(blockSize) : codeBlocks[i - k] = (char*)alloc(blockSize);
