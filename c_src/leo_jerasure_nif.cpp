@@ -34,6 +34,7 @@ vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize, int k, int m
             throw std::invalid_argument("Invalid Coding");
             break;
     }
+    coder->checkParams();
     return coder->doEncode(data, dataSize);
 } 
 
@@ -53,6 +54,7 @@ ErlNifBinary doDecode(vector<int> availList, vector<ErlNifBinary> blockList, lon
             throw std::invalid_argument("Invalid Coding");
             break;
     }
+    coder->checkParams();
     return coder->doDecode(blockList, availList, fileSize); 
 }
 

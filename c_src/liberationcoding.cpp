@@ -8,7 +8,12 @@
 #include "liberation.h"
 
 void LiberationCoding::checkParams() {
-
+    if (k <= 0 || m != 2 || w <= 0)
+        throw std::invalid_argument("Invalid Coding Parameters (m = 2)");
+    if (k > w)
+        throw std::invalid_argument("Invalid Coding Parameters (k <= w)");
+	if (w <= 2 || !(w%2) || !is_prime(w))
+        throw std::invalid_argument("Invalid Coding Parameters (w is prime)");
 }
 
 vector<ErlNifBinary> LiberationCoding::doEncode(unsigned char* data, size_t dataSize) {

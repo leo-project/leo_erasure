@@ -8,7 +8,8 @@
 #include "cauchy.h"
 
 void CauchyCoding::checkParams() {
-
+    if (k <= 0 || m <= 0 || w <= 0)
+        throw std::invalid_argument("Invalid Coding Parameters");
 }
 
 vector<ErlNifBinary> CauchyCoding::doEncode(unsigned char* data, size_t dataSize) {

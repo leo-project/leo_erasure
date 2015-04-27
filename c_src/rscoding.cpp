@@ -8,6 +8,10 @@
 #include "reed_sol.h"
 
 void RSCoding::checkParams() {
+    if (k <= 0 || m <= 0 || w <= 0)
+        throw std::invalid_argument("Invalid Coding Parameters");
+	if (w != 8 && w != 16 && w != 32) 
+        throw std::invalid_argument("Invalid Coding Parameters (w = 8/16/32)");
 }
 
 vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
