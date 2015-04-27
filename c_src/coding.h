@@ -11,12 +11,12 @@ using namespace std;
 
 class Coding {
     public:
-        Coding(int _k, int _m, int _w) : k(_k), m(_m), w(_w) { checkParams(); };
+        Coding(int _k, int _m, int _w) : k(_k), m(_m), w(_w) {};
 
         virtual vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize) = 0;
         virtual ErlNifBinary doDecode(vector<ErlNifBinary> blockList, vector<int> blockIdList, size_t dataSize) = 0;
     protected:
-        virtual void checkParams();
+        virtual void checkParams() = 0;
         int k, m, w;
 };
 
