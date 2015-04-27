@@ -8,7 +8,6 @@
 #include "reed_sol.h"
 
 void RSCoding::checkParams() {
-    return ;
 }
 
 vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
@@ -18,17 +17,23 @@ vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
 
     size_t blockSize = roundTo((roundTo(dataSize, k*w) / (k*w)), sizeof(long)) * w;
 
+    /// TODO: Hack to make memory allocation 16-byte aligned, force min block size to 512KB
+    if (blockSize < 512 << 10)
+        blockSize = 512 << 10;
+
     char** dataBlocks = (char**)alloc(sizeof(char*) * k);
     char** codeBlocks = (char**)alloc(sizeof(char*) * m);
 
-    size_t offset = 0;
     for(int i = 0; i < k; ++i) {
         ErlNifBinary tmpBlock;
+
         enif_alloc_binary(blockSize, &tmpBlock);
         dataBlocks[i] = (char*)tmpBlock.data;
-        
-        allBlockEntry.push_back(tmpBlock);
 
+        allBlockEntry.push_back(tmpBlock);
+        
+        memset(dataBlocks[i], 0, blockSize);
+        /*
         if (i == k - 1) {
             memset(dataBlocks[i], 0, blockSize);
             memcpy(dataBlocks[i], data + offset, dataSize - offset);
@@ -36,13 +41,24 @@ vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
             memcpy(dataBlocks[i], data + offset, blockSize);
         }
         offset += blockSize;
+        */
+    }
+
+    size_t offset = 0;
+    int i = 0;
+    while(offset < dataSize) {
+        size_t copySize = min(dataSize - offset, blockSize);
+        memcpy(dataBlocks[i], data + offset, copySize);
+        i++;
+        offset += copySize;
     }
 
     for(int i = 0; i < m; ++i) {
         ErlNifBinary tmpBlock;
+
         enif_alloc_binary(blockSize, &tmpBlock);
         codeBlocks[i] = (char*)tmpBlock.data;
-        
+
         allBlockEntry.push_back(tmpBlock);
     }
 
