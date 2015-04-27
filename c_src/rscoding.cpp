@@ -21,10 +21,6 @@ vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
 
     size_t blockSize = roundTo((roundTo(dataSize, k*w) / (k*w)), 16) * w;
 
-    /// TODO: Hack to make memory allocation 16-byte aligned, force min block size to 512KB
-//    if (blockSize < 512 << 10)
-//        blockSize = 512 << 10;
-
     char** dataBlocks = (char**)alloc(sizeof(char*) * k);
     char** codeBlocks = (char**)alloc(sizeof(char*) * m);
 
@@ -58,15 +54,6 @@ vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
         } else {
             memset(dataBlocks[i], 0, blockSize);        
         }
-        /*
-        if (i == k - 1) {
-            memset(dataBlocks[i], 0, blockSize);
-            memcpy(dataBlocks[i], data + offset, dataSize - offset);
-        } else {
-            memcpy(dataBlocks[i], data + offset, blockSize);
-        }
-        offset += blockSize;
-        */
     }
     
     for(int i = 0; i < m; ++i) {
@@ -98,7 +85,7 @@ vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
     // Copy Back the Code Blocks
     if (!aligned) {
         for(int i = 0; i < m; ++i) {
-            memcpy(allBlockEntry[i + k].data, codeBlocks, blockSize);
+            memcpy(allBlockEntry[i + k].data, codeBlocks[i], blockSize);
         }
         dealloc(tmpMemory);
     }
@@ -118,9 +105,10 @@ ErlNifBinary RSCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> bloc
     size_t blockSize = blockList[0].size;
     set<int> availSet(blockIdList.begin(), blockIdList.end());
 
+    char* tmpMemory = (char*)alloc(blockSize * (k + m));
     int j = 0;
     for(int i = 0; i < k + m; ++i) {
-        i < k ? dataBlocks[i] = (char*)alloc(blockSize) : codeBlocks[i - k] = (char*)alloc(blockSize);
+        i < k ? dataBlocks[i] = tmpMemory + i * blockSize : codeBlocks[i - k] = tmpMemory + i * blockSize;
         if (availSet.count(i) == 0) {
             erasures[j++] = i;
         }
@@ -140,18 +128,9 @@ ErlNifBinary RSCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> bloc
     jerasure_matrix_decode(k, m, w, matrix, 1, erasures, dataBlocks, codeBlocks, blockSize);
 
     enif_alloc_binary(dataSize, &file);
-    size_t offset = 0;
-    int i = 0;
-    while(offset < dataSize) {
-        size_t copySize = min(dataSize - offset, blockSize);
-        memcpy(file.data + offset, dataBlocks[i], copySize);
-        i++;
-        offset += copySize;
-    }
+    memcpy(file.data, tmpMemory, dataSize);
 
-    for(int i = 0; i < k + m; ++i) {
-        i < k ? dealloc(dataBlocks[i]) : dealloc(codeBlocks[i - k]);
-    }
+    dealloc(tmpMemory);
 
     free(matrix);
     dealloc(dataBlocks);
