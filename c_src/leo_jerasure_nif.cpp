@@ -69,41 +69,45 @@ CodingType getCoding(char* codingAtom) {
     throw std::invalid_argument("Invalid Coding");
 }
 
+static ERL_NIF_TERM errTuple(ErlNifEnv *env,const char* message) {
+    ERL_NIF_TERM error = enif_make_atom(env, "error");
+    ERL_NIF_TERM reason = enif_make_string(env, message, ERL_NIF_LATIN1);
+    return enif_make_tuple2(env, error, reason);
+}
+
 static ERL_NIF_TERM
 encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     ErlNifBinary in;
     if(!enif_inspect_iolist_as_binary(env, argv[0], &in)) {
-        return enif_make_badarg(env);
+        return errTuple(env, "Expected Input Bin");
     }
     size_t dataSize = in.size;
     unsigned char* data = in.data;
 
     char atomString[64];
     if(!enif_get_atom(env, argv[2], atomString, 64, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
+        return errTuple(env,"Expect coding");
     }
     
     const ERL_NIF_TERM* tuple;
     int cnt;
     if(!enif_get_tuple(env, argv[3], &cnt, &tuple)) {
-        return enif_make_badarg(env);
+        return errTuple(env,"Expect tuple for coding parameters");
     }
     int k,m,w;
     if(!enif_get_int(env, tuple[0], &k))
-        return enif_make_badarg(env);
+        return errTuple(env,"Invalid K");
     if(!enif_get_int(env, tuple[1], &m))
-        return enif_make_badarg(env);
+        return errTuple(env,"Invalid M");
     if(!enif_get_int(env, tuple[2], &w))
-        return enif_make_badarg(env);
+        return errTuple(env,"Invalid W");
 
     vector<ErlNifBinary> blocks;
     try {
         CodingType coding = getCoding(atomString);
         blocks = doEncode(data, dataSize, k, m, w, coding);
     } catch (std::exception &e) {
-        ERL_NIF_TERM error = enif_make_atom(env, "error");
-        ERL_NIF_TERM reason = enif_make_string(env, e.what(), ERL_NIF_LATIN1);
-        return enif_make_tuple2(env, error, reason);
+        return errTuple(env, e.what());
     }
 
     ERL_NIF_TERM retArr[blocks.size()];
@@ -117,9 +121,10 @@ encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
 
 static ERL_NIF_TERM
 decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+
     unsigned int listLen;
     if (!enif_get_list_length(env, argv[0], &listLen)) {
-        return enif_make_badarg(env);
+        return errTuple(env,"Block List Needed");
     }
 
     ErlNifBinary blockList1[listLen];
@@ -149,26 +154,26 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     uint64_t dataSize;
 #endif
     if (!enif_get_uint64(env, argv[2], &dataSize)) {
-        return enif_make_badarg(env);
+        return errTuple(env,"Expect data size");
     }
 
     char atomString[64];
     if(!enif_get_atom(env, argv[3], atomString, 64, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
+        return errTuple(env,"Expect coding");
     }
     
     const ERL_NIF_TERM* tuple;
     int cnt;
     if(!enif_get_tuple(env, argv[4], &cnt, &tuple)) {
-        return enif_make_badarg(env);
+        return errTuple(env,"Expect tuple for coding parameters");
     }
     int k,m,w;
     if(!enif_get_int(env, tuple[0], &k))
-        return enif_make_badarg(env);
+        return errTuple(env,"Invalid K");
     if(!enif_get_int(env, tuple[1], &m))
-        return enif_make_badarg(env);
+        return errTuple(env,"Invalid M");
     if(!enif_get_int(env, tuple[2], &w))
-        return enif_make_badarg(env);
+        return errTuple(env,"Invalid W");
 
     vector<ErlNifBinary> blockList2 (blockList1, blockList1 + listLen);
     vector<int> availList2 (availList1, availList1 + listLen);
@@ -178,9 +183,7 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
         CodingType coding = getCoding(atomString);
         out = doDecode(availList2, blockList2, dataSize, k, m, w, coding);
     } catch (std::exception &e) {
-        ERL_NIF_TERM error = enif_make_atom(env, "error");
-        ERL_NIF_TERM reason = enif_make_string(env, e.what(), ERL_NIF_LATIN1);
-        return enif_make_tuple2(env, error, reason);
+        return errTuple(env,e.what());
     }
 
     ERL_NIF_TERM bin = enif_make_binary(env, &out);

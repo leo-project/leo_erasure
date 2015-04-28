@@ -38,8 +38,8 @@
 -define(ECODE_CLASS, vandrs).
 -define(ECODE_PARAMS, {10, 4, 8}).
 
-
-%% @doc Initialize
+%% @doc Initialize, Loading NIF Driver
+%%
 init() ->
     SoName = case code:priv_dir(?MODULE) of
                  {error, bad_name} ->
@@ -55,9 +55,8 @@ init() ->
     erlang:load_nif(SoName, 0),
     filelib:ensure_dir(?BLOCKSTOR).
 
-
-%% @doc
-%% @private
+%% @doc Write Blocks to Disk
+%%
 write_blocks(_, [], Cnt) ->
     Cnt;
 write_blocks(FileName, [H | T], Cnt) ->
@@ -67,8 +66,8 @@ write_blocks(FileName, [H | T], Cnt) ->
     file:write_file(BlockPath, H),
     write_blocks(FileName, T, Cnt + 1).
 
-
-%% @private
+%% @doc Encode a File to Blocks and Write to Disk
+%%
 encode_file(FileName) ->
     encode_file(FileName, ?ECODE_CLASS, ?ECODE_PARAMS).
 encode_file(FileName, Coding, CodingParams) ->
@@ -76,7 +75,7 @@ encode_file(FileName, Coding, CodingParams) ->
         {ok, FileContent} ->
             io:format("File Content Length: ~p~n", [byte_size(FileContent)]),
             {Time, {ok, Blocks}} = timer:tc(?MODULE, encode, [FileContent, byte_size(FileContent),
-                                                        Coding, CodingParams]),
+                                                              Coding, CodingParams]),
             io:format("Duration ~p us~n", [Time]),
             io:format("Number of Blocks: ~p~n", [length(Blocks)]);
         {error, Reason} ->
@@ -86,37 +85,7 @@ encode_file(FileName, Coding, CodingParams) ->
     filelib:ensure_dir(?BLOCKSTOR),
     write_blocks(FileName, Blocks, 0).
 
-
-%% @doc
-%% @private
-check_available_blocks(_, -1, List) ->
-    List;
-check_available_blocks(FileName, Cnt, List) ->
-    BlockName = FileName ++ "." ++ integer_to_list(Cnt),
-    BlockPath = filename:join(?BLOCKSTOR, BlockName),
-    case filelib:is_regular(BlockPath) of
-        true ->
-            check_available_blocks(FileName, Cnt - 1, [Cnt | List]);
-        _ ->
-            check_available_blocks(FileName, Cnt - 1, List)
-    end.
-
-
-%% @doc
-%% @private
-read_blocks(FileName, AvailList) ->
-    read_blocks(FileName, lists:reverse(AvailList), []).
-read_blocks(_, [], BlockList) ->
-    BlockList;
-read_blocks(FileName, [Cnt | T], BlockList) ->
-    BlockName = FileName ++ "." ++ integer_to_list(Cnt),
-    BlockPath = filename:join(?BLOCKSTOR, BlockName),
-    {ok, Block} = file:read_file(BlockPath),
-    read_blocks(FileName, T, [Block | BlockList]).
-
-
-%% @doc
-%% @private
+%% @doc Read Blocks from Disk, Decode the File and Write with .dec Extension
 decode_file(FileName, FileSize) ->
     decode_file(FileName, FileSize, ?ECODE_CLASS, ?ECODE_PARAMS).
 decode_file(FileName, FileSize, Coding, CodingParams) ->
@@ -128,15 +97,8 @@ decode_file(FileName, FileSize, Coding, CodingParams) ->
     io:format("Decoded file at ~p~n", [DecodeName]),
     file:write_file(DecodeName, FileContent).
 
-
-%% @doc
-%% @private
-repeat_encode(_, _, _, _, 0)->
-    ok;
-repeat_encode(Bin, BinSize, Coding, Params, Cnt)->
-    io:format("Encode Round Remained: ~p~n", [Cnt]),
-    encode(Bin, BinSize, Coding, Params),
-    repeat_encode(Bin, BinSize, Coding, Params, Cnt - 1).
+%% @doc Benchmark Encoding Speed
+%%
 benchmark_encode(TotalSizeM, ChunkSizeM, Coding, Params) ->
     TotalSize = TotalSizeM * 1024 * 1024,
     ChunkSize = ChunkSizeM * 1024 * 1024,
@@ -150,11 +112,59 @@ benchmark_encode(TotalSizeM, ChunkSizeM, Coding, Params) ->
     io:format("Encode Rate: ~p MB/s~n", [Rate]),
     {ok, Time}.
 
-
-%% @doc
-%% @private
+%% @doc Actual Encoding with Jerasure (NIF)
+%%
+-spec(encode(Bin, TotalSize, Coding, Params) ->
+            {ok, binary()} | {error, any()} when Bin::binary(),
+                                                 TotalSize::integer(),
+                                                 Coding::atom(),
+                                                 Params::{integer(), integer(), integer()}).
 encode(_Bin,_TotalSize,_Coding,_Params) ->
     exit(nif_library_not_loaded).
 
-decode(_,_,_,_,_) ->
+%% @doc Actual Decoding with Jerasure (NIF)
+%%
+-spec(decode(BlockList, IdList, FileSize, Coding, Params) ->
+            {ok, binary()} | {error, any()} when BlockList::[binary()],
+                                                 IdList::[integer()],
+                                                 FileSize::integer(),
+                                                 Coding::atom(),
+                                                 Params::{integer(), integer(), integer()}).
+decode(_BlockList,_IDList,_FileSize,_Coding,_CodingParams) ->
     exit(nif_library_not_loaded).
+
+%% @doc Repeat the Encoding Process
+%% @private
+repeat_encode(_, _, _, _, 0)->
+    ok;
+repeat_encode(Bin, BinSize, Coding, CodingParams, Cnt)->
+    io:format("Encode Round Remained: ~p~n", [Cnt]),
+    encode(Bin, BinSize, Coding, CodingParams),
+    repeat_encode(Bin, BinSize, Coding, CodingParams, Cnt - 1).
+
+%% @doc Check which Blocks are Available on Disk
+%% @private
+check_available_blocks(_, -1, List) ->
+    List;
+check_available_blocks(FileName, Cnt, List) ->
+    BlockName = FileName ++ "." ++ integer_to_list(Cnt),
+    BlockPath = filename:join(?BLOCKSTOR, BlockName),
+    case filelib:is_regular(BlockPath) of
+        true ->
+            check_available_blocks(FileName, Cnt - 1, [Cnt | List]);
+        _ ->
+            check_available_blocks(FileName, Cnt - 1, List)
+    end.
+
+%% @doc Read Blocks from disk
+%% @private
+read_blocks(FileName, AvailList) ->
+    read_blocks(FileName, lists:reverse(AvailList), []).
+read_blocks(_, [], BlockList) ->
+    BlockList;
+read_blocks(FileName, [Cnt | T], BlockList) ->
+    BlockName = FileName ++ "." ++ integer_to_list(Cnt),
+    BlockPath = filename:join(?BLOCKSTOR, BlockName),
+    {ok, Block} = file:read_file(BlockPath),
+    read_blocks(FileName, T, [Block | BlockList]).
+

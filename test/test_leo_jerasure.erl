@@ -109,10 +109,10 @@ parameters_test() ->
     {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), unkown, {4,2,3}),
 
     ?debugMsg("=====   Invalid: liberation {troll}"),
-    ?assertError(badarg, leo_jerasure:encode(Bin, byte_size(Bin), liberation, {troll})),
+    {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), liberation, {troll}),
 
     ?debugMsg("=====   Invalid: {4,2,5}, liberation"),
-    ?assertError(badarg, leo_jerasure:encode(Bin, byte_size(Bin), {4,2,5}, liberation)).
+    {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), {4,2,5}, liberation).
 
 suite_test_() ->
     {timeout, 180, fun long_process/0}.
