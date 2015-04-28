@@ -103,7 +103,16 @@ parameters_test() ->
 
     ?debugMsg("=====   Invalid: liberation {4,2,5} with 3 failures"),
     {ok, BlockList3} = leo_jerasure:encode(Bin, byte_size(Bin), liberation, {4,2,5}),
-    {error, _} = leo_jerasure:decode(BlockList3,[0,1,2], byte_size(Bin), liberation, {4,2,5}).
+    {error, _} = leo_jerasure:decode(BlockList3,[0,1,2], byte_size(Bin), liberation, {4,2,5}),
+
+    ?debugMsg("=====   Invalid: Unknown {4,2,3}"),
+    {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), unkown, {4,2,3}),
+
+    ?debugMsg("=====   Invalid: liberation {troll}"),
+    ?assertError(badarg, leo_jerasure:encode(Bin, byte_size(Bin), liberation, {troll})),
+
+    ?debugMsg("=====   Invalid: {4,2,5}, liberation"),
+    ?assertError(badarg, leo_jerasure:encode(Bin, byte_size(Bin), {4,2,5}, liberation)).
 
 suite_test_() ->
     {timeout, 180, fun long_process/0}.
