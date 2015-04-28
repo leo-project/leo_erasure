@@ -89,9 +89,12 @@ encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
         return enif_make_badarg(env);
     }
     int k,m,w;
-    enif_get_int(env, tuple[0], &k);
-    enif_get_int(env, tuple[1], &m);
-    enif_get_int(env, tuple[2], &w);
+    if(!enif_get_int(env, tuple[0], &k))
+        return enif_make_badarg(env);
+    if(!enif_get_int(env, tuple[1], &m))
+        return enif_make_badarg(env);
+    if(!enif_get_int(env, tuple[2], &w))
+        return enif_make_badarg(env);
 
     vector<ErlNifBinary> blocks;
     try {
@@ -160,9 +163,12 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
         return enif_make_badarg(env);
     }
     int k,m,w;
-    enif_get_int(env, tuple[0], &k);
-    enif_get_int(env, tuple[1], &m);
-    enif_get_int(env, tuple[2], &w);
+    if(!enif_get_int(env, tuple[0], &k))
+        return enif_make_badarg(env);
+    if(!enif_get_int(env, tuple[1], &m))
+        return enif_make_badarg(env);
+    if(!enif_get_int(env, tuple[2], &w))
+        return enif_make_badarg(env);
 
     vector<ErlNifBinary> blockList2 (blockList1, blockList1 + listLen);
     vector<int> availList2 (availList1, availList1 + listLen);
