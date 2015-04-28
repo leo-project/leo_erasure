@@ -66,7 +66,7 @@ CodingType getCoding(char* codingAtom) {
         return VAND_RS;
     if (atomString == "liberation")
         return LIBERATION;
-    return INVALID_CODING;
+    throw std::invalid_argument("Invalid Coding");
 }
 
 static ERL_NIF_TERM
@@ -83,9 +83,6 @@ encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
         return enif_make_badarg(env);
     }
     
-    CodingType coding = getCoding(atomString);
-    /// TODO: Error Detection
-
     const ERL_NIF_TERM* tuple;
     int cnt;
     if(!enif_get_tuple(env, argv[3], &cnt, &tuple)) {
@@ -96,7 +93,15 @@ encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     enif_get_int(env, tuple[1], &m);
     enif_get_int(env, tuple[2], &w);
 
-    vector<ErlNifBinary> blocks = doEncode(data, dataSize, k, m, w, coding);
+    vector<ErlNifBinary> blocks;
+    try {
+        CodingType coding = getCoding(atomString);
+        blocks = doEncode(data, dataSize, k, m, w, coding);
+    } catch (std::exception &e) {
+        ERL_NIF_TERM error = enif_make_atom(env, "error");
+        ERL_NIF_TERM reason = enif_make_string(env, e.what(), ERL_NIF_LATIN1);
+        return enif_make_tuple2(env, error, reason);
+    }
 
     ERL_NIF_TERM retArr[blocks.size()];
     for(unsigned int i = 0; i < blocks.size(); ++i) {
@@ -149,9 +154,6 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
         return enif_make_badarg(env);
     }
     
-    CodingType coding = getCoding(atomString);
-    /// TODO: Error Detection
-
     const ERL_NIF_TERM* tuple;
     int cnt;
     if(!enif_get_tuple(env, argv[4], &cnt, &tuple)) {
@@ -165,7 +167,16 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     vector<ErlNifBinary> blockList2 (blockList1, blockList1 + listLen);
     vector<int> availList2 (availList1, availList1 + listLen);
 
-    ErlNifBinary out = doDecode(availList2, blockList2, dataSize, k, m, w, coding);
+    ErlNifBinary out;
+    try {
+        CodingType coding = getCoding(atomString);
+        out = doDecode(availList2, blockList2, dataSize, k, m, w, coding);
+    } catch (std::exception &e) {
+        ERL_NIF_TERM error = enif_make_atom(env, "error");
+        ERL_NIF_TERM reason = enif_make_string(env, e.what(), ERL_NIF_LATIN1);
+        return enif_make_tuple2(env, error, reason);
+    }
+
     ERL_NIF_TERM bin = enif_make_binary(env, &out);
     ERL_NIF_TERM ok = enif_make_atom(env, "ok");
     return enif_make_tuple2(env, ok, bin);
