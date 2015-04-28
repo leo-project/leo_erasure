@@ -10,6 +10,8 @@
 void CauchyCoding::checkParams() {
     if (k <= 0 || m <= 0 || w <= 0)
         throw std::invalid_argument("Invalid Coding Parameters");
+    if ((k + m) > (1 << w))
+        throw std::invalid_argument("Invalid Coding Parameters (larger w)");
 }
 
 vector<ErlNifBinary> CauchyCoding::doEncode(unsigned char* data, size_t dataSize) {
