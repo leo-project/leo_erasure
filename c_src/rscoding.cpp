@@ -99,13 +99,16 @@ ErlNifBinary RSCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> bloc
 
     ErlNifBinary file;
 
+    set<int> availSet(blockIdList.begin(), blockIdList.end());
+    if (availSet.size() < (unsigned int)k) 
+        throw std::invalid_argument("Not Enough Blocks");
+
+    size_t blockSize = blockList[0].size;
     char** dataBlocks = (char**)alloc(sizeof(char*) * k);
     char** codeBlocks = (char**)alloc(sizeof(char*) * m);
     int erasures[k + m];
-    size_t blockSize = blockList[0].size;
-    set<int> availSet(blockIdList.begin(), blockIdList.end());
-
     char* tmpMemory = (char*)alloc(blockSize * (k + m));
+
     int j = 0;
     for(int i = 0; i < k + m; ++i) {
         i < k ? dataBlocks[i] = tmpMemory + i * blockSize : codeBlocks[i - k] = tmpMemory + i * blockSize;

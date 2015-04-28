@@ -65,11 +65,14 @@ ErlNifBinary CauchyCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> 
 
     ErlNifBinary file;
 
+    set<int> availSet(blockIdList.begin(), blockIdList.end());
+    if (availSet.size() < (unsigned int)k) 
+        throw std::invalid_argument("Not Enough Blocks");
+
     char** dataBlocks = (char**)alloc(sizeof(char*) * k);
     char** codeBlocks = (char**)alloc(sizeof(char*) * m);
     int erasures[k + m];
     size_t blockSize = blockList[0].size;
-    set<int> availSet(blockIdList.begin(), blockIdList.end());
 
     int j = 0;
     for(int i = 0; i < k + m; ++i) {

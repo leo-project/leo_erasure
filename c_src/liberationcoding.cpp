@@ -63,12 +63,14 @@ vector<ErlNifBinary> LiberationCoding::doEncode(unsigned char* data, size_t data
 
 ErlNifBinary LiberationCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> blockIdList, size_t dataSize) {
 
-    int *bitmatrix = liberation_coding_bitmatrix(k, w);
-
     ErlNifBinary file;
 
-    size_t blockSize = blockList[0].size;
     set<int> availSet(blockIdList.begin(), blockIdList.end());
+    if (availSet.size() < (unsigned int)k) 
+        throw std::invalid_argument("Not Enough Blocks");
+
+    size_t blockSize = blockList[0].size;
+    int *bitmatrix = liberation_coding_bitmatrix(k, w);
 
     bool needFix = false;
     for(int i = 0; i < k; ++i) 
