@@ -11,12 +11,12 @@ Overview
 Exported Method
 --------
 * Encode / Decode
-  * `encode/4` (Bin, BinSize, Coding, Coding_Parameters `{k,m,w}`)
-  * `decode/5` (Blocks, AvailableBlocksIDs, FileSize, Coding, Coding, Coding_Parameters `{k,m,w}`)
+  * `encode/4` (Bin, BinSize, Coding, CodingParameters `{k,m,w}`)
+  * `decode/5` (Blocks, AvailableBlocksIDs, FileSize, Coding, CodingParameters `{k,m,w}`)
 * Helper Methods
-  * `encode_file/3` (File_Name, Coding, Coding_Parameters `{k,m,w}`)
+  * `encode_file/3` (FileName, Coding, CodingParameters `{k,m,w}`)
     * Encode the file and store the data/code blocks at `block/`
-  * `decode_file/4` (File_Name, File_Size, Coding, Coding_Parameters `{k,m,w}`)
+  * `decode_file/4` (FileName, FileSize, Coding, CodingParameters `{k,m,w}`)
     * Decode from the blocks in `block/` to reconstruct the file
-  * `benchmark_encode/3` (Total_Size_MB, One_Size_MB, Coding, Coding_Parameters `{k,m,w}`)
+  * `benchmark_encode/3` (TotalSizeMB, RoundSizeMB, Coding, CodingParameters `{k,m,w}`)
     * Benchmark the encoding speed
