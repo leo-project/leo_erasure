@@ -86,6 +86,7 @@ encode_file(FileName, Coding, CodingParams) ->
     write_blocks(FileName, Blocks, 0).
 
 %% @doc Read Blocks from Disk, Decode the File and Write with .dec Extension
+%%
 decode_file(FileName, FileSize) ->
     decode_file(FileName, FileSize, ?ECODE_CLASS, ?ECODE_PARAMS).
 decode_file(FileName, FileSize, Coding, CodingParams) ->
@@ -99,6 +100,11 @@ decode_file(FileName, FileSize, Coding, CodingParams) ->
 
 %% @doc Benchmark Encoding Speed
 %%
+-spec(benchmark_encode(TotalSizeM, ChunkSizeM, Coding, Params) ->
+            {ok, atom()} when TotalSizeM::integer(),
+                              ChunkSizeM::integer(),
+                              Coding::atom(),
+                              Params::{integer(), integer(), integer()}).
 benchmark_encode(TotalSizeM, ChunkSizeM, Coding, Params) ->
     TotalSize = TotalSizeM * 1024 * 1024,
     ChunkSize = ChunkSizeM * 1024 * 1024,
@@ -139,7 +145,7 @@ repeat_encode(_, _, _, _, 0)->
     ok;
 repeat_encode(Bin, BinSize, Coding, CodingParams, Cnt)->
     io:format("Encode Round Remained: ~p~n", [Cnt]),
-    encode(Bin, BinSize, Coding, CodingParams),
+    {ok, _} = encode(Bin, BinSize, Coding, CodingParams),
     repeat_encode(Bin, BinSize, Coding, CodingParams, Cnt - 1).
 
 %% @doc Check which Blocks are Available on Disk
