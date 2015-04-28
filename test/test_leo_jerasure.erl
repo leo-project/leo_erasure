@@ -68,15 +68,42 @@ decode_test(Bin, BlockList, Coding, CodingParams, Failures) ->
     ok.
 
 correctness_test(Bin, Coding, CodingParams, Failures) ->
-    ?debugFmt("=====   ~p ~p with ~p failures (all cases)", [Coding, CodingParams, Failures]),
+    ?debugFmt(" =====   ~p ~p with ~p failures (all cases)", [Coding, CodingParams, Failures]),
     {ok, BlockList} = leo_jerasure:encode(Bin, byte_size(Bin), Coding, CodingParams),
     ok = decode_test(Bin, BlockList, Coding, CodingParams, Failures).
 
 bench_encode_test() ->
-    ?debugMsg("===== Encoding Benchmark Test ====="),
+    ?debugMsg(" ===== Encoding Benchmark Test ====="),
     bench_encode(vandrs,{10,4,8}),
     bench_encode(cauchyrs,{10,4,10}),
     bench_encode(liberation,{10,2,11}).
+
+parameters_test() ->
+    ?debugMsg(" ===== Testing Parameters ====="),
+    Bin = crypto:rand_bytes(1024),
+    ?debugMsg(" =====   Invalid: vandrs {4,2,7}"),
+    {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), vandrs, {4,2,7}),
+
+    ?debugMsg(" =====   Invalid: vandrs {4,2,8} with 3 failures"),
+    {ok, BlockList} = leo_jerasure:encode(Bin, byte_size(Bin), vandrs, {4,2,8}),
+    {error, _} = leo_jerasure:decode(BlockList,[0,1,2], byte_size(Bin), vandrs, {4,2,8}),
+
+    ?debugMsg(" =====   Invalid: cauchyrs {10,4,3}"),
+    {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), cauchyrs, {10,4,3}),
+
+    ?debugMsg(" =====   Invalid: cauchyrs {4,2,3} with 3 failures"),
+    {ok, BlockList2} = leo_jerasure:encode(Bin, byte_size(Bin), cauchyrs, {4,2,3}),
+    {error, _} = leo_jerasure:decode(BlockList2,[0,1,2], byte_size(Bin), cauchyrs, {4,2,3}),
+
+    ?debugMsg(" =====   Invalid: liberation {4,2,6}"),
+    {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), liberation, {4,2,6}),
+
+    ?debugMsg("=====   Invalid: liberation {4,2,3}"),
+    {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), liberation, {4,2,3}),
+
+    ?debugMsg("=====   Invalid: liberation {4,2,5} with 3 failures"),
+    {ok, BlockList3} = leo_jerasure:encode(Bin, byte_size(Bin), liberation, {4,2,5}),
+    {error, _} = leo_jerasure:decode(BlockList3,[0,1,2], byte_size(Bin), liberation, {4,2,5}).
 
 suite_test_() ->
     {timeout, 180, fun long_process/0}.
