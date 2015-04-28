@@ -23,6 +23,7 @@
 
 -export([encode_file/1,decode_file/2]).
 -export([encode_file/3,decode_file/4]).
+-export([write_blocks/3]).
 -export([encode/4, decode/5]).
 -export([benchmark_encode/4]).
 
@@ -51,7 +52,8 @@ init() ->
                  Dir ->
                      filename:join(Dir, "leo_jerasure")
              end,
-    erlang:load_nif(SoName, 0).
+    erlang:load_nif(SoName, 0),
+    filelib:ensure_dir(?BLOCKSTOR).
 
 
 %% @doc
@@ -59,6 +61,7 @@ init() ->
 write_blocks(_, [], Cnt) ->
     Cnt;
 write_blocks(FileName, [H | T], Cnt) ->
+    filelib:ensure_dir(?BLOCKSTOR),
     BlockName = FileName ++ "." ++ integer_to_list(Cnt),
     BlockPath = filename:join(?BLOCKSTOR, BlockName),
     file:write_file(BlockPath, H),
@@ -143,7 +146,7 @@ benchmark_encode(TotalSizeM, ChunkSizeM, Coding, Params) ->
     repeat_encode(Bin, ChunkSize, Coding, Params, TotalSize div ChunkSize),
     End = now(),
     Time = timer:now_diff(End, Start),
-    Rate = TotalSizeM / Time * 1000 * 1000,
+    Rate = TotalSizeM / Time * 1024 * 1024,
     io:format("Encode Rate: ~p MB/s~n", [Rate]),
     {ok, Time}.
 
