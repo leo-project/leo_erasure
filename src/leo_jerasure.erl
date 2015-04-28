@@ -146,7 +146,7 @@ benchmark_encode(TotalSizeM, ChunkSizeM, Coding, Params) ->
     repeat_encode(Bin, ChunkSize, Coding, Params, TotalSize div ChunkSize),
     End = now(),
     Time = timer:now_diff(End, Start),
-    Rate = TotalSizeM / Time * 1024 * 1024,
+    Rate = TotalSizeM / Time * 1000 * 1000,
     io:format("Encode Rate: ~p MB/s~n", [Rate]),
     {ok, Time}.
 

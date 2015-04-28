@@ -72,6 +72,12 @@ correctness_test(Bin, Coding, CodingParams, Failures) ->
     {ok, BlockList} = leo_jerasure:encode(Bin, byte_size(Bin), Coding, CodingParams),
     ok = decode_test(Bin, BlockList, Coding, CodingParams, Failures).
 
+bench_encode_test() ->
+    ?debugMsg("===== Encoding Benchmark Test ====="),
+    bench_encode(vandrs,{10,4,8}),
+    bench_encode(cauchyrs,{10,4,10}),
+    bench_encode(liberation,{10,2,11}).
+
 suite_test_() ->
     {timeout, 180, fun long_process/0}.
 
@@ -88,13 +94,7 @@ long_process() ->
 
 bench_encode(Coding, CodingParams) ->
     {ok, Time} = leo_jerasure:benchmark_encode(100, 100, Coding, CodingParams),
-    Rate = 100 / Time * 1024 * 1024,
+    Rate = 100 / Time * 1000 * 1000,
     ?debugFmt("=====   ~p ~p Encoding Rate: ~p MB/s", [Coding, CodingParams, Rate]).
-
-bench_encode_test() ->
-    ?debugMsg("===== Encoding Benchmark Test ====="),
-    bench_encode(vandrs,{10,4,8}),
-    bench_encode(cauchyrs,{10,4,10}),
-    bench_encode(liberation,{10,2,11}).
 
 -endif.
