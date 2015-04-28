@@ -65,7 +65,6 @@ write_blocks(FileName, [H | T], Cnt) ->
     write_blocks(FileName, T, Cnt + 1).
 
 
-%% @doc
 %% @private
 encode_file(FileName) ->
     encode_file(FileName, ?ECODE_CLASS, ?ECODE_PARAMS).
@@ -73,7 +72,7 @@ encode_file(FileName, Coding, CodingParams) ->
     case file:read_file(FileName) of
         {ok, FileContent} ->
             io:format("File Content Length: ~p~n", [byte_size(FileContent)]),
-            {Time, Blocks} = timer:tc(?MODULE, encode, [FileContent, byte_size(FileContent),
+            {Time, {ok, Blocks}} = timer:tc(?MODULE, encode, [FileContent, byte_size(FileContent),
                                                         Coding, CodingParams]),
             io:format("Duration ~p us~n", [Time]),
             io:format("Number of Blocks: ~p~n", [length(Blocks)]);
@@ -102,8 +101,8 @@ check_available_blocks(FileName, Cnt, List) ->
 
 %% @doc
 %% @private
-read_blocks(FileName, AvailableList) ->
-    read_blocks(FileName, lists:reverse(AvailableList), []).
+read_blocks(FileName, AvailList) ->
+    read_blocks(FileName, lists:reverse(AvailList), []).
 read_blocks(_, [], BlockList) ->
     BlockList;
 read_blocks(FileName, [Cnt | T], BlockList) ->
@@ -118,9 +117,9 @@ read_blocks(FileName, [Cnt | T], BlockList) ->
 decode_file(FileName, FileSize) ->
     decode_file(FileName, FileSize, ?ECODE_CLASS, ?ECODE_PARAMS).
 decode_file(FileName, FileSize, Coding, CodingParams) ->
-    AvailableList = check_available_blocks(FileName, 14, []),
-    BlockList = read_blocks(FileName, AvailableList),
-    {Time, FileContent} = timer:tc(?MODULE, decode, [BlockList, AvailableList, FileSize, Coding, CodingParams]),
+    AvailList = check_available_blocks(FileName, 14, []),
+    BlockList = read_blocks(FileName, AvailList),
+    {Time, {ok, FileContent}} = timer:tc(?MODULE, decode, [BlockList, AvailList, FileSize, Coding, CodingParams]),
     io:format("Duration ~p~n", [Time]),
     DecodeName = FileName ++ ".dec",
     io:format("Decoded file at ~p~n", [DecodeName]),

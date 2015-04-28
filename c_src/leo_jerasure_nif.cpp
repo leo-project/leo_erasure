@@ -102,7 +102,9 @@ encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     for(unsigned int i = 0; i < blocks.size(); ++i) {
         retArr[i] = enif_make_binary(env, &blocks[i]);
     }
-    return enif_make_list_from_array(env, retArr, blocks.size());
+    ERL_NIF_TERM blockList = enif_make_list_from_array(env, retArr, blocks.size());
+    ERL_NIF_TERM ok = enif_make_atom(env, "ok");
+    return enif_make_tuple2(env, ok, blockList);
 }
 
 static ERL_NIF_TERM
@@ -164,7 +166,9 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     vector<int> availList2 (availList1, availList1 + listLen);
 
     ErlNifBinary out = doDecode(availList2, blockList2, dataSize, k, m, w, coding);
-    return enif_make_binary(env, &out);
+    ERL_NIF_TERM bin = enif_make_binary(env, &out);
+    ERL_NIF_TERM ok = enif_make_atom(env, "ok");
+    return enif_make_tuple2(env, ok, bin);
 }
 
 static ErlNifFunc nif_funcs[] = {
