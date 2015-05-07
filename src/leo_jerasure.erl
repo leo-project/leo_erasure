@@ -24,7 +24,7 @@
 -export([encode_file/1,decode_file/2]).
 -export([encode_file/3,decode_file/4]).
 -export([write_blocks/3]).
--export([encode/4, decode/5]).
+-export([encode/4, decode/4, decode/5]).
 -export([benchmark_encode/4]).
 
 -on_load(init/0).
@@ -91,8 +91,10 @@ decode_file(FileName, FileSize) ->
     decode_file(FileName, FileSize, ?ECODE_CLASS, ?ECODE_PARAMS).
 decode_file(FileName, FileSize, Coding, CodingParams) ->
     AvailList = check_available_blocks(FileName, 14, []),
-    BlockList = read_blocks(FileName, AvailList),
-    {Time, {ok, FileContent}} = timer:tc(?MODULE, decode, [BlockList, AvailList, FileSize, Coding, CodingParams]),
+%    BlockList = read_blocks(FileName, AvailList),
+    BlockWithIdList = read_blocks(FileName, AvailList),
+%    {Time, {ok, FileContent}} = timer:tc(?MODULE, decode, [BlockList, AvailList, FileSize, Coding, CodingParams]),
+    {Time, {ok, FileContent}} = timer:tc(?MODULE, decode, [BlockWithIdList, FileSize, Coding, CodingParams]),
     io:format("Duration ~p~n", [Time]),
     DecodeName = FileName ++ ".dec",
     io:format("Decoded file at ~p~n", [DecodeName]),
@@ -120,24 +122,41 @@ benchmark_encode(TotalSizeM, ChunkSizeM, Coding, Params) ->
 
 %% @doc Actual Encoding with Jerasure (NIF)
 %%
--spec(encode(Bin, TotalSize, Coding, Params) ->
-            {ok, binary()} | {error, any()} when Bin::binary(),
+-spec(encode(Bin, TotalSize, Coding, CodingParams) ->
+            {ok, [binary()]} | {error, any()} when Bin::binary(),
                                                  TotalSize::integer(),
                                                  Coding::atom(),
-                                                 Params::{integer(), integer(), integer()}).
-encode(_Bin,_TotalSize,_Coding,_Params) ->
+                                                 CodingParams::{integer(), integer(), integer()}).
+encode(_Bin,_TotalSize,_Coding,_CodingParams) ->
     exit(nif_library_not_loaded).
 
 %% @doc Actual Decoding with Jerasure (NIF)
 %%
--spec(decode(BlockList, IdList, FileSize, Coding, Params) ->
+-spec(decode(BlockList, IdList, FileSize, Coding, CodingParams) ->
             {ok, binary()} | {error, any()} when BlockList::[binary()],
                                                  IdList::[integer()],
                                                  FileSize::integer(),
                                                  Coding::atom(),
-                                                 Params::{integer(), integer(), integer()}).
-decode(_BlockList,_IDList,_FileSize,_Coding,_CodingParams) ->
+                                                 CodingParams::{integer(), integer(), integer()}).
+decode(_BlockList,_IdList,_FileSize,_Coding,_CodingParams) ->
     exit(nif_library_not_loaded).
+
+%% @doc Actual Decoding with Jerasure (NIF) [{ID, Bin}] Interface
+%%
+-spec(decode(BlockWithIdList, FileSize, Coding, CodingParams) ->
+            {ok, binary()} | {error, any()} when BlockWithIdList::[{integer(), binary()}],
+                                                 FileSize::integer(),
+                                                 Coding::atom(),
+                                                 CodingParams::{integer(), integer(), integer()}).
+decode(BlockWithIdList, FileSize, Coding, CodingParams) ->
+    SortFun = fun (A ,B) ->
+                      {IdA, _BlockA} = A,
+                      {IdB, _BlockB} = B,
+                      IdA =< IdB
+              end,
+    SortedList = lists:sort(SortFun, BlockWithIdList),
+    {IdList, BlockList} = lists:unzip(SortedList),
+    decode(BlockList, IdList, FileSize, Coding, CodingParams).
 
 %% @doc Repeat the Encoding Process
 %% @private
@@ -165,12 +184,13 @@ check_available_blocks(FileName, Cnt, List) ->
 %% @doc Read Blocks from disk
 %% @private
 read_blocks(FileName, AvailList) ->
-    read_blocks(FileName, lists:reverse(AvailList), []).
+%    read_blocks(FileName, lists:reverse(AvailList), []).
+    read_blocks(FileName, AvailList, []).
 read_blocks(_, [], BlockList) ->
     BlockList;
 read_blocks(FileName, [Cnt | T], BlockList) ->
     BlockName = FileName ++ "." ++ integer_to_list(Cnt),
     BlockPath = filename:join(?BLOCKSTOR, BlockName),
     {ok, Block} = file:read_file(BlockPath),
-    read_blocks(FileName, T, [Block | BlockList]).
+    read_blocks(FileName, T, [{Cnt, Block} | BlockList]).
 

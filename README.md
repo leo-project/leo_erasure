@@ -12,6 +12,7 @@ Exported Method
 --------
 * Encode / Decode
   * `encode/4` (Bin, BinSize, Coding, CodingParameters `{k,m,w}`)
+  * `decode/4` ([BlockID, Block], FileSize, Coding, CodingParameters `{k,m,w}`)
   * `decode/5` (Blocks, AvailableBlocksIDs, FileSize, Coding, CodingParameters `{k,m,w}`)
 * Helper Methods
   * `encode_file/3` (FileName, Coding, CodingParameters `{k,m,w}`)
