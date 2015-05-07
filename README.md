@@ -13,8 +13,8 @@ Exported Method
 * Encode / Decode
   * `encode/4` (Bin, BinSize, Coding, CodingParameters `{k,m,w}`)
     * Encode a binary into blocks
-  * `decode/4` ([{BlockID, Block}], FileSize, Coding, CodingParameters `{k,m,w}`)
-    * Decode blocks back to original binary, interface with {BlockID, Block}
+  * `decode/4` ([{Block, BlockID}], FileSize, Coding, CodingParameters `{k,m,w}`)
+    * Decode blocks back to original binary, interface with {Block, BlockID}
   * `decode/5` (Blocks, AvailableBlocksIDs, FileSize, Coding, CodingParameters `{k,m,w}`)
     * Decode blocks back to original binary, interface with Sorted [Block] and [BlockID]
 * Helper Methods

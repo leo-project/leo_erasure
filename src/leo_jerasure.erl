@@ -144,18 +144,18 @@ decode(_BlockList,_IdList,_FileSize,_Coding,_CodingParams) ->
 %% @doc Actual Decoding with Jerasure (NIF) [{ID, Bin}] Interface
 %%
 -spec(decode(BlockWithIdList, FileSize, Coding, CodingParams) ->
-            {ok, binary()} | {error, any()} when BlockWithIdList::[{integer(), binary()}],
+            {ok, binary()} | {error, any()} when BlockWithIdList::[{binary(), integer()}],
                                                  FileSize::integer(),
                                                  Coding::atom(),
                                                  CodingParams::{integer(), integer(), integer()}).
 decode(BlockWithIdList, FileSize, Coding, CodingParams) ->
     SortFun = fun (A ,B) ->
-                      {IdA, _BlockA} = A,
-                      {IdB, _BlockB} = B,
+                      {_BlockA, IdA} = A,
+                      {_BlockB, IdB} = B,
                       IdA =< IdB
               end,
     SortedList = lists:sort(SortFun, BlockWithIdList),
-    {IdList, BlockList} = lists:unzip(SortedList),
+    {BlockList, IdList} = lists:unzip(SortedList),
     decode(BlockList, IdList, FileSize, Coding, CodingParams).
 
 %% @doc Repeat the Encoding Process
@@ -192,5 +192,5 @@ read_blocks(FileName, [Cnt | T], BlockList) ->
     BlockName = FileName ++ "." ++ integer_to_list(Cnt),
     BlockPath = filename:join(?BLOCKSTOR, BlockName),
     {ok, Block} = file:read_file(BlockPath),
-    read_blocks(FileName, T, [{Cnt, Block} | BlockList]).
+    read_blocks(FileName, T, [{Block, Cnt} | BlockList]).
 
