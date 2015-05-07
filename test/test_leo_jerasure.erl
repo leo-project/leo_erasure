@@ -117,6 +117,26 @@ parameters_test() ->
 suite_test_() ->
     {timeout, 180, fun long_process/0}.
 
+file_test() ->
+    ?debugMsg("===== Testing encode_file + decode_file ====="),
+    Bin = crypto:rand_bytes(?TEST_SIZE),
+    ?debugFmt("=====   vandrs {10,4,8} ~p bytes", [?TEST_SIZE]), 
+    file:write_file("testbin", Bin),
+    leo_jerasure:encode_file("testbin", vandrs, {10,4,8}),
+    ?debugMsg("=====   Erasure Block 0,2,4,6"),
+    file:delete("blocks/testbin.0"),
+    file:delete("blocks/testbin.2"),
+    file:delete("blocks/testbin.4"),
+    file:delete("blocks/testbin.6"),
+    leo_jerasure:decode_file("testbin", ?TEST_SIZE, vandrs, {10,4,8}),
+    {ok, DecBin} = file:read_file("testbin.dec"),
+    ?assertEqual(Bin, DecBin),
+    ?debugMsg("=====   Correct, Cleanup"),
+    BlockPathList = filelib:wildcard("blocks/testbin.*"),
+    lists:foreach(fun file:delete/1, BlockPathList),
+    file:delete("testbin"),
+    file:delete("testbin.dec").
+
 long_process() ->
     ?debugMsg("===== Testing Encode + Decode ====="),
     Bin = crypto:rand_bytes(?TEST_SIZE),
