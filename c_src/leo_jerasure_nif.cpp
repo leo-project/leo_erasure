@@ -127,7 +127,7 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if (!enif_get_list_length(env, argv[0], &listLen)) {
         return errTuple(env,"Block List Needed");
     }
-    if (!enif_get_list_length(env, argv[1], &listLen)) {
+    if (!enif_get_list_length(env, argv[1], &listLen2)) {
         return errTuple(env,"ID List Needed");
     }
     if (listLen != listLen2) {
