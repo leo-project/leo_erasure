@@ -123,8 +123,15 @@ static ERL_NIF_TERM
 decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
 
     unsigned int listLen;
+    unsigned int listLen2;
     if (!enif_get_list_length(env, argv[0], &listLen)) {
         return errTuple(env,"Block List Needed");
+    }
+    if (!enif_get_list_length(env, argv[1], &listLen)) {
+        return errTuple(env,"ID List Needed");
+    }
+    if (listLen != listLen2) {
+        return errTuple(env,"Block List and ID List does not match (different Len)");
     }
 
     ErlNifBinary blockList1[listLen];
@@ -140,11 +147,15 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
         enif_get_list_cell(env, BT, &BH, &BT);
         enif_get_list_cell(env, T, &H, &T);
         ErlNifBinary tmpB;
-        enif_inspect_iolist_as_binary(env, BH, &tmpB);
+        if (!enif_inspect_iolist_as_binary(env, BH, &tmpB)) {
+            return errTuple(env, "Invalid Block");
+        }
         blockList1[i] = tmpB;
 
         int tmp;
-        enif_get_int(env, H, &tmp);
+        if (!enif_get_int(env, H, &tmp)) {
+            return errTuple(env, "Invalid ID");
+        }
         availList1[i] = tmp;
     }
 
