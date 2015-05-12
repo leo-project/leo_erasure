@@ -35,7 +35,7 @@ case "$1" in
 
     get-deps)
         export GFP=`pwd`"/gf-complete"
-        if [ ! -d gf-complete ]; then
+        if [ ! -d gf-complete/src/.libs ]; then
             git clone http://lab.jerasure.org/jerasure/gf-complete.git
             cd gf-complete
             ./autogen.sh
@@ -43,7 +43,7 @@ case "$1" in
 			$MAKE
             cd ..
         fi
-        if [ ! -d jerasure ]; then
+        if [ ! -d jerasure/src/.libs ]; then
             git clone http://lab.jerasure.org/jerasure/jerasure.git
             cd jerasure
             autoreconf --install
@@ -55,7 +55,7 @@ case "$1" in
 
     *)
         export GFP=`pwd`"/gf-complete"
-        if [ ! -d gf-complete ]; then
+        if [ ! -d gf-complete/src/.libs ]; then
             git clone http://lab.jerasure.org/jerasure/gf-complete.git
             cd gf-complete
             ./autogen.sh
@@ -63,7 +63,7 @@ case "$1" in
             $MAKE
             cd ..
         fi
-        if [ ! -d jerasure ]; then
+        if [ ! -d jerasure/src/.libs ]; then
             git clone http://lab.jerasure.org/jerasure/jerasure.git
             cd jerasure
             autoreconf --install
