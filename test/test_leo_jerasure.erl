@@ -68,7 +68,7 @@ decode_test(Bin, BlockList, Coding, CodingParams, Failures) ->
     _ = erlang:statistics(wall_clock),
     lists:foreach(Func, FailureCombs),
     {_,Time} = erlang:statistics(wall_clock),
-    ?debugFmt("   >>  time:~wms ", [Time]),
+    ?debugFmt("   >> time: ~wms", [Time]),
     ok.
 
 correctness_test(Bin, Coding, CodingParams, Failures) ->
@@ -156,7 +156,7 @@ bench_encode(Coding, CodingParams) ->
     {ok, Time} = leo_jerasure:benchmark_encode(100, 100, Coding, CodingParams),
     Rate = 100 / Time * 1000 * 1000,
     ?debugFmt(" * ~p, ~p", [Coding, CodingParams]),
-    ?debugFmt("   >> Encoding Rate: ~p MB/s", [Rate]),
+    ?debugFmt("   >> Encoding Rate: ~p MB/s", [erlang:round(Rate * 100) / 100]),
     ok.
 
 -endif.
