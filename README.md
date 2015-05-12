@@ -24,3 +24,8 @@ Exported Method
     * Decode from the blocks in `block/` to reconstruct the file
   * `benchmark_encode/3` (TotalSizeMB, RoundSizeMB, Coding, CodingParameters `{k,m,w}`)
     * Benchmark the encoding speed
+
+Dependencies
+--------
+* "leo_jerasure" : Erlang 17.x
+* "Jerasure" : Automake 1.14+, Autoconf 2.65+, Libtool
