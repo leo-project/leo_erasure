@@ -40,7 +40,7 @@ case "$1" in
             cd gf-complete
             ./autogen.sh
             ./configure
-			$MAKE
+            $MAKE
             cd ..
         fi
         if [ ! -d jerasure/src/.libs ]; then
@@ -48,7 +48,7 @@ case "$1" in
             cd jerasure
             autoreconf --install
             ./configure LDFLAGS=-L$GFP/src/.libs/ CPPFLAGS=-I$GFP/include
-			$MAKE
+            $MAKE
             cd ..
         fi
         ;;
@@ -59,7 +59,7 @@ case "$1" in
             git clone http://lab.jerasure.org/jerasure/gf-complete.git
             cd gf-complete
             ./autogen.sh
-			./configure
+            ./configure
             $MAKE
             cd ..
         fi
