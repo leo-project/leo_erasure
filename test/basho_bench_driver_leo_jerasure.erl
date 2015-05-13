@@ -67,7 +67,7 @@ run(decode, _KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingPara
                                bin_size = BinSize, block_id_list = BlockWithIdList,
                                erasure = Erasure } = State) ->
     {K, _, _} = CodingParams,
-    Selected = lists:sublist(BlockWithIdList, Erasure, Erasure + K - 1),
+    Selected = lists:sublist(BlockWithIdList, Erasure + 1, Erasure + K),
     case leo_jerasure:decode(Selected, BinSize, Coding, CodingParams) of
         {error, Cause} ->
             {error, Cause, State};
