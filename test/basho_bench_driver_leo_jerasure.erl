@@ -54,7 +54,8 @@ new(_Id) ->
                  block_id_list = BlockWithIdList,
                  erasure = Erasure}}.
 
-run(encode, _KeyGen, ValGen, #state{ coding = Coding, coding_params = CodingParams } = State) ->
+run(encode, KeyGen, ValGen, #state{ coding = Coding, coding_params = CodingParams } = State) ->
+    _Key = KeyGen(),
     Val = ValGen(),
     case leo_jerasure:encode(Val, byte_size(Val), Coding, CodingParams) of
         {error, Cause} ->
@@ -63,9 +64,10 @@ run(encode, _KeyGen, ValGen, #state{ coding = Coding, coding_params = CodingPara
             {ok, State}
     end;
 
-run(decode, _KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParams, 
-                               bin_size = BinSize, block_id_list = BlockWithIdList,
-                               erasure = Erasure } = State) ->
+run(decode, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParams, 
+                                   bin_size = BinSize, block_id_list = BlockWithIdList,
+                                   erasure = Erasure } = State) ->
+    _Key = KeyGen(),
     {K, _, _} = CodingParams,
     Selected = lists:sublist(BlockWithIdList, Erasure + 1, Erasure + K),
     case leo_jerasure:decode(Selected, BinSize, Coding, CodingParams) of
