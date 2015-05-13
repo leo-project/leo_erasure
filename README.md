@@ -29,3 +29,8 @@ Dependencies
 --------
 * "leo_jerasure" : Erlang 17.x
 * "Jerasure" : Automake 1.14+, Autoconf 2.65+, Libtool
+* For Ubuntu / Debian
+
+```
+sudo apt-get install git automake autoconf libtool build-essential
+```
