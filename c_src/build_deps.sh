@@ -38,6 +38,7 @@ case "$1" in
         if [ ! -d gf-complete/src/.libs ]; then
             git clone http://lab.jerasure.org/jerasure/gf-complete.git
             cd gf-complete
+            libtoolize
             ./autogen.sh
             ./configure
             $MAKE
@@ -46,6 +47,7 @@ case "$1" in
         if [ ! -d jerasure/src/.libs ]; then
             git clone http://lab.jerasure.org/jerasure/jerasure.git
             cd jerasure
+            libtoolize
             autoreconf --install
             ./configure LDFLAGS=-L$GFP/src/.libs/ CPPFLAGS=-I$GFP/include
             $MAKE
@@ -58,6 +60,7 @@ case "$1" in
         if [ ! -d gf-complete/src/.libs ]; then
             git clone http://lab.jerasure.org/jerasure/gf-complete.git
             cd gf-complete
+            libtoolize
             ./autogen.sh
             ./configure
             $MAKE
@@ -66,6 +69,7 @@ case "$1" in
         if [ ! -d jerasure/src/.libs ]; then
             git clone http://lab.jerasure.org/jerasure/jerasure.git
             cd jerasure
+            libtoolize
             autoreconf --install
             ./configure LDFLAGS=-L$GFP/src/.libs/ CPPFLAGS=-I$GFP/include
             $MAKE
