@@ -5,6 +5,11 @@ notifications:
 otp_release:
   - R16B03-1
 before_install:
+  # Download and install automake-1.13, required by Jerasure
+  - curl "http://ftp.gnu.org/gnu/automake/automake-1.13.tar.gz" > automake-1.13.tar.gz
+  - tar -zxvf automake-1.13.tar.gz
+  - (cd automake-1.13 && ./configure && make -j4 && sudo make install)
+  
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
   - sudo apt-get update -qq
 install:
