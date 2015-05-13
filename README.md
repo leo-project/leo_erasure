@@ -1,6 +1,8 @@
 leo_jerasure
 ===========
 
+[![Build Status](https://secure.travis-ci.org/leo-project/leo_jerasure.png?branch=develop)](http://travis-ci.org/leo-project/leo_jerasure)
+
 Overview
 --------
 * "leo_jerasure" is a Erlang binding for the open sourced Erasure Coding library "Jerasure"
