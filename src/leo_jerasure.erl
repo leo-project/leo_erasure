@@ -25,6 +25,7 @@
 -export([encode_file/3,decode_file/4]).
 -export([write_blocks/3]).
 -export([encode/4, decode/4, decode/5]).
+-export([repair_one/4, repair_one/5]).
 -export([benchmark_encode/4]).
 
 -on_load(init/0).
@@ -91,9 +92,7 @@ decode_file(FileName, FileSize) ->
     decode_file(FileName, FileSize, ?ECODE_CLASS, ?ECODE_PARAMS).
 decode_file(FileName, FileSize, Coding, CodingParams) ->
     AvailList = check_available_blocks(FileName, 14, []),
-%    BlockList = read_blocks(FileName, AvailList),
     BlockWithIdList = read_blocks(FileName, AvailList),
-%    {Time, {ok, FileContent}} = timer:tc(?MODULE, decode, [BlockList, AvailList, FileSize, Coding, CodingParams]),
     {Time, {ok, FileContent}} = timer:tc(?MODULE, decode, [BlockWithIdList, FileSize, Coding, CodingParams]),
     io:format("Duration ~p~n", [Time]),
     DecodeName = FileName ++ ".dec",
@@ -103,10 +102,10 @@ decode_file(FileName, FileSize, Coding, CodingParams) ->
 %% @doc Benchmark Encoding Speed
 %%
 -spec(benchmark_encode(TotalSizeM, ChunkSizeM, Coding, Params) ->
-            {ok, atom()} when TotalSizeM::integer(),
-                              ChunkSizeM::integer(),
-                              Coding::atom(),
-                              Params::{integer(), integer(), integer()}).
+        {ok, atom()} when TotalSizeM::integer(),
+                          ChunkSizeM::integer(),
+                          Coding::atom(),
+                          Params::{integer(), integer(), integer()}).
 benchmark_encode(TotalSizeM, ChunkSizeM, Coding, Params) ->
     TotalSize = TotalSizeM * 1024 * 1024,
     ChunkSize = ChunkSizeM * 1024 * 1024,
@@ -123,40 +122,68 @@ benchmark_encode(TotalSizeM, ChunkSizeM, Coding, Params) ->
 %% @doc Actual Encoding with Jerasure (NIF)
 %%
 -spec(encode(Bin, TotalSize, Coding, CodingParams) ->
-            {ok, [binary()]} | {error, any()} when Bin::binary(),
-                                                 TotalSize::integer(),
-                                                 Coding::atom(),
-                                                 CodingParams::{integer(), integer(), integer()}).
+        {ok, [binary()]} | {error, any()} when Bin::binary(),
+                                               TotalSize::integer(),
+                                               Coding::atom(),
+                                               CodingParams::{integer(), integer(), integer()}).
 encode(_Bin,_TotalSize,_Coding,_CodingParams) ->
     exit(nif_library_not_loaded).
 
 %% @doc Actual Decoding with Jerasure (NIF)
 %%
 -spec(decode(BlockList, IdList, FileSize, Coding, CodingParams) ->
-            {ok, binary()} | {error, any()} when BlockList::[binary()],
-                                                 IdList::[integer()],
-                                                 FileSize::integer(),
-                                                 Coding::atom(),
-                                                 CodingParams::{integer(), integer(), integer()}).
+        {ok, binary()} | {error, any()} when BlockList::[binary()],
+                                             IdList::[integer()],
+                                             FileSize::integer(),
+                                             Coding::atom(),
+                                             CodingParams::{integer(), integer(), integer()}).
 decode(_BlockList,_IdList,_FileSize,_Coding,_CodingParams) ->
     exit(nif_library_not_loaded).
 
 %% @doc Actual Decoding with Jerasure (NIF) [{ID, Bin}] Interface
 %%
 -spec(decode(BlockWithIdList, FileSize, Coding, CodingParams) ->
-            {ok, binary()} | {error, any()} when BlockWithIdList::[{binary(), integer()}],
-                                                 FileSize::integer(),
-                                                 Coding::atom(),
-                                                 CodingParams::{integer(), integer(), integer()}).
+        {ok, binary()} | {error, any()} when BlockWithIdList::[{binary(), integer()}],
+                                             FileSize::integer(),
+                                             Coding::atom(),
+                                             CodingParams::{integer(), integer(), integer()}).
 decode(BlockWithIdList, FileSize, Coding, CodingParams) ->
+    {BlockList, IdList} = sort_and_split(BlockWithIdList),
+    decode(BlockList, IdList, FileSize, Coding, CodingParams).
+
+%% @doc Repair One Block with Jerasure (NIF)
+%%
+-spec(repair_one(BlockList, IdList, RepairId, Coding, CodingParams) ->
+        {ok, binary()} | {error, any()} when BlockList::[binary()],
+                                             IdList::[integer()],
+                                             RepairId::integer(),
+                                             Coding::atom(),
+                                             CodingParams::{integer(), integer(), integer()}).
+repair_one(BlockList, IdList, RepairId, Coding, CodingParams) ->
+    exit(nif_library_not_loaded).
+
+%% @doc Repair One Block with Jerasure (NIF) [{Bin, Id}] Interface
+%%
+-spec(repair_one(BlockWithIdList, RepairId, Coding, CodingParams) ->
+        {ok, binary()} | {error, any()} when BlockWithIdList::[{binary(), integer()}],
+                                             RepairId::integer(),
+                                             Coding::atom(),
+                                             CodingParams::{integer(), integer(), integer()}).
+repair_one(BlockWithIdList, RepairId, Coding, CodingParams) ->
+    {BlockList, IdList} = sort_and_split(BlockWithIdList),
+    repair_one(BlockList, IdList, RepairId, Coding, CodingParams).
+
+%% @doc Sort and Split BlockIdList to Block List and ID List
+%% @private
+sort_and_split(BlockIdList) ->
     SortFun = fun (A ,B) ->
                       {_BlockA, IdA} = A,
                       {_BlockB, IdB} = B,
                       IdA =< IdB
               end,
-    SortedList = lists:sort(SortFun, BlockWithIdList),
+    SortedList = lists:sort(SortFun, BlockIdList),
     {BlockList, IdList} = lists:unzip(SortedList),
-    decode(BlockList, IdList, FileSize, Coding, CodingParams).
+    {BlockList, IdList}.
 
 %% @doc Repeat the Encoding Process
 %% @private
@@ -184,7 +211,7 @@ check_available_blocks(FileName, Cnt, List) ->
 %% @doc Read Blocks from disk
 %% @private
 read_blocks(FileName, AvailList) ->
-%    read_blocks(FileName, lists:reverse(AvailList), []).
+    %    read_blocks(FileName, lists:reverse(AvailList), []).
     read_blocks(FileName, AvailList, []).
 read_blocks(_, [], BlockList) ->
     BlockList;
