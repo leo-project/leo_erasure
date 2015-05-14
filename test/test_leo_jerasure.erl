@@ -47,6 +47,23 @@ comb(_,[]) ->
 comb(N,[H|T]) ->
     [[H|L] || L <- comb(N-1,T)]++comb(N,T).
 
+repair_test(Bin, Coding, CodingParams) ->
+    ?debugFmt(" * ~p ~p", [Coding, CodingParams]),
+    {ok, BlockList} = leo_jerasure:encode(Bin, byte_size(Bin), Coding, CodingParams),
+    {K, M, _W} = CodingParams,
+    FullList = lists:seq(0, K + M - 1),
+    Func = fun(RepairId) ->
+                   AvailList = lists:subtract(FullList, [RepairId]),
+                   AvailBlocks = filter_block(BlockList, AvailList),
+                   OriBlock = lists:nth(RepairId + 1, BlockList),
+                   {ok, OriBlock} = leo_jerasure:repair_one(AvailBlocks, AvailList, RepairId, Coding, CodingParams)
+           end,
+    _ = erlang:statistics(wall_clock),
+    lists:foreach(Func, FullList),
+    {_,Time} = erlang:statistics(wall_clock),
+    ?debugFmt("   >> time: ~wms", [Time]),
+    ok.
+
 decode_test(Bin, BlockList, Coding, CodingParams, Failures) ->
     {K, M, _W} = CodingParams,
     FullList = lists:seq(0, K + M - 1),
@@ -140,6 +157,13 @@ file_test() ->
     lists:foreach(fun file:delete/1, BlockPathList),
     file:delete("testbin"),
     file:delete("testbin.dec").
+
+repair_test() ->
+    ?debugMsg("===== Block Repair ====="),
+    Bin = crypto:rand_bytes(?TEST_SIZE),
+    repair_test(Bin, vandrs, {10,4,8}),
+    repair_test(Bin, cauchyrs, {4,2,3}),
+    repair_test(Bin, liberation, {4,2,7}).
 
 long_process() ->
     ?debugMsg("===== Testing Encode + Decode ====="),
