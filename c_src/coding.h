@@ -15,6 +15,7 @@ class Coding {
 
         virtual vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize) = 0;
         virtual ErlNifBinary doDecode(vector<ErlNifBinary> blockList, vector<int> blockIdList, size_t dataSize) = 0;
+        virtual ErlNifBinary doRepair(vector<ErlNifBinary> blockList, vector<int> blockIdList, int repairId);
         virtual void checkParams() = 0;
     protected:
         int k, m, w;
