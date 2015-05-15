@@ -25,6 +25,7 @@
 -export([encode_file/3,decode_file/4]).
 -export([write_blocks/3]).
 -export([encode/4, decode/4, decode/5]).
+-export([repair/4, repair/5]).
 -export([repair_one/4, repair_one/5]).
 -export([benchmark_encode/4]).
 
@@ -151,6 +152,31 @@ decode(BlockWithIdList, FileSize, Coding, CodingParams) ->
     {BlockList, IdList} = lists:unzip(BlockWithIdList),
     decode(BlockList, IdList, FileSize, Coding, CodingParams).
 
+%% @doc Repair Multiple Blocks with Jerasure (NIF)
+%%
+-spec(repair(BlockList, IdList, RepairIdList, Coding, CodingParams) ->
+        {ok, [binary()]} | {error, any()} when BlockList::[binary()],
+                                             IdList::[integer()],
+                                             RepairIdList ::[integer()],
+                                             Coding::atom(),
+                                             CodingParams::{integer(), integer(), integer()}).
+repair(BlockList, IdList, RepairIdList, Coding, CodingParams) ->
+    lists:foldl(fun(RepairId, Acc) ->
+                        Block = repair_one(BlockList, IdList, RepairId, Coding, CodingParams),
+                        [Block | Acc]
+                end, [], RepairIdList).
+
+%% @doc Repair Multiple Blocks with Jerasure (NIF) [{Bin, Id}] Interface
+%%
+-spec(repair(BlockWithIdList, RepairIdList, Coding, CodingParams) ->
+        {ok, [binary()]} | {error, any()} when BlockWithIdList::[{binary(), integer()}],
+                                             RepairIdList ::[integer()],
+                                             Coding::atom(),
+                                             CodingParams::{integer(), integer(), integer()}).
+repair(BlockWithIdList, RepairIdList, Coding, CodingParams) ->
+    {BlockList, IdList} = lists:unzip(BlockWithIdList),
+    repair(BlockList, IdList, RepairIdList, Coding, CodingParams).
+
 %% @doc Repair One Block with Jerasure (NIF)
 %%
 -spec(repair_one(BlockList, IdList, RepairId, Coding, CodingParams) ->
@@ -199,7 +225,6 @@ check_available_blocks(FileName, Cnt, List) ->
 %% @doc Read Blocks from disk
 %% @private
 read_blocks(FileName, AvailList) ->
-    %    read_blocks(FileName, lists:reverse(AvailList), []).
     read_blocks(FileName, AvailList, []).
 read_blocks(_, [], BlockList) ->
     BlockList;
