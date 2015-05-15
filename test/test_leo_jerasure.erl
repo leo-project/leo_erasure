@@ -59,7 +59,8 @@ repair_test(Bin, Coding, CodingParams) ->
                    {ok, OriBlock} = leo_jerasure:repair_one(AvailBlocks, AvailList, RepairId, Coding, CodingParams)
            end,
     _ = erlang:statistics(wall_clock),
-    lists:foreach(Func, FullList),
+    TestList = [X||{_,X} <- lists:sort([ {random:uniform(), N} || N <- FullList])],
+    lists:foreach(Func, TestList),
     {_,Time} = erlang:statistics(wall_clock),
     ?debugFmt("   >> time: ~wms", [Time]),
     ok.
@@ -70,7 +71,10 @@ decode_test(Bin, BlockList, Coding, CodingParams, Failures) ->
     FailureCombs = comb(K + M - Failures, FullList),
     Func = fun(AvailList) ->
                    AvailBlocks = filter_block(BlockList, AvailList),
-                   {ok, OutBin} = leo_jerasure:decode(AvailBlocks, AvailList, byte_size(Bin), Coding, CodingParams),
+                   BlockIdList = lists:zip(AvailBlocks, AvailList),
+                   ShuffleList = [X||{_,X} <- lists:sort([ {random:uniform(), N} || N <- BlockIdList])],
+                   {ok, OutBin} = leo_jerasure:decode(ShuffleList, byte_size(Bin), Coding, CodingParams),
+%                   {ok, OutBin} = leo_jerasure:decode(AvailBlocks, AvailList, byte_size(Bin), Coding, CodingParams),
                    case OutBin of
                        Bin ->
                            ok;
