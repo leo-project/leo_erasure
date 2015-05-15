@@ -159,7 +159,7 @@ decode(BlockWithIdList, FileSize, Coding, CodingParams) ->
                                              RepairId::integer(),
                                              Coding::atom(),
                                              CodingParams::{integer(), integer(), integer()}).
-repair_one(BlockList, IdList, RepairId, Coding, CodingParams) ->
+repair_one(_BlockList, _IdList, _RepairId, _Coding, _CodingParams) ->
     exit(nif_library_not_loaded).
 
 %% @doc Repair One Block with Jerasure (NIF) [{Bin, Id}] Interface
