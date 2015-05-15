@@ -5,6 +5,7 @@
 #include "alloc.h"
 
 #include "jerasure.h"
+#include "jerasure_mod.h"
 #include "liberation.h"
 
 void LiberationCoding::checkParams() {
@@ -124,7 +125,7 @@ ErlNifBinary LiberationCoding::doDecode(vector<ErlNifBinary> blockList, vector<i
         }
     }
 
-    jerasure_schedule_decode_lazy(k, m, w, bitmatrix, erasures, dataBlocks, codeBlocks, blockSize, blockSize / w, 0);
+    jerasure_schedule_decode_data_lazy(k, m, w, bitmatrix, erasures, dataBlocks, codeBlocks, blockSize, blockSize / w, 0);
 
     enif_alloc_binary(dataSize, &file);
     size_t offset = 0;
