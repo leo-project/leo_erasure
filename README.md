@@ -34,7 +34,7 @@ Exported Method
 
 Note
 --------
-* [Block] and [BlockID] are one-to-one mapped accordingly, and assumed to be sorted with BlockID (Ascending)
+* [Block] and [BlockID] are one-to-one mapped accordingly
 
 Dependencies
 --------
