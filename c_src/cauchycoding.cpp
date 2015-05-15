@@ -5,6 +5,7 @@
 #include "alloc.h"
 
 #include "jerasure.h"
+#include "jerasure_mod.h"
 #include "cauchy.h"
 
 void CauchyCoding::checkParams() {
@@ -89,15 +90,6 @@ ErlNifBinary CauchyCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> 
             copySize = min(dataSize - offset, blockSize);
             memcpy(file.data + offset, blockList[i].data, copySize);
         }
-        /*
-        int i = 0;
-        while(offset < dataSize) {
-            size_t copySize = min(dataSize - offset, blockSize);
-            memcpy(file.data + offset, blockList[i].data, copySize);
-            i++;
-            offset += copySize;
-        }
-        */
         
         return file;
     }
@@ -126,7 +118,7 @@ ErlNifBinary CauchyCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> 
 
     int *matrix = cauchy_good_general_coding_matrix(k, m, w);
     int *bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
-    jerasure_schedule_decode_lazy(k, m, w, bitmatrix, erasures, dataBlocks, codeBlocks, blockSize, blockSize / w, 1);
+    jerasure_schedule_decode_data_lazy(k, m, w, bitmatrix, erasures, dataBlocks, codeBlocks, blockSize, blockSize / w, 1);
 
     enif_alloc_binary(dataSize, &file);
     size_t offset = 0;

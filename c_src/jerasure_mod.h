@@ -10,12 +10,12 @@ int jerasure_schedule_decode_data_lazy(int k, int m, int w,
         int *bitmatrix, int *erasures, 
         char **data_ptrs, char **coding_ptrs, int size, int packetsize,
         int smart);
-static int **jerasure_generate_decoding_data_schedule(
+int **jerasure_generate_decoding_data_schedule(
         int k, int m, int w, int *bitmatrix, int *erasures, int smart);
 
 // Unmodified Private Functions
-static char **set_up_ptrs_for_scheduled_decoding(
+char **set_up_ptrs_for_scheduled_decoding(
         int k, int m, int *erasures, char **data_ptrs, char **coding_ptrs);
-static int set_up_ids_for_scheduled_decoding(
+int set_up_ids_for_scheduled_decoding(
         int k, int m, int *erasures, int *row_ids, int *ind_to_row);
 #endif
