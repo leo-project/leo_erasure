@@ -80,7 +80,16 @@ ErlNifBinary CauchyCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> 
 
     if (!needFix) {
         enif_alloc_binary(dataSize, &file);
-        size_t offset = 0;
+        size_t copySize, offset = 0;
+        int blockId;
+        for(size_t i = 0; i < blockIdList.size(); ++i) {
+            blockId = blockIdList[i];
+            if (blockId >= k) continue;
+            offset = blockId * blockSize;
+            copySize = min(dataSize - offset, blockSize);
+            memcpy(file.data + offset, blockList[i].data, copySize);
+        }
+        /*
         int i = 0;
         while(offset < dataSize) {
             size_t copySize = min(dataSize - offset, blockSize);
@@ -88,6 +97,7 @@ ErlNifBinary CauchyCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> 
             i++;
             offset += copySize;
         }
+        */
         
         return file;
     }

@@ -148,7 +148,7 @@ decode(_BlockList,_IdList,_FileSize,_Coding,_CodingParams) ->
                                              Coding::atom(),
                                              CodingParams::{integer(), integer(), integer()}).
 decode(BlockWithIdList, FileSize, Coding, CodingParams) ->
-    {BlockList, IdList} = sort_and_split(BlockWithIdList),
+    {BlockList, IdList} = lists:unzip(BlockWithIdList),
     decode(BlockList, IdList, FileSize, Coding, CodingParams).
 
 %% @doc Repair One Block with Jerasure (NIF)
@@ -170,20 +170,8 @@ repair_one(_BlockList, _IdList, _RepairId, _Coding, _CodingParams) ->
                                              Coding::atom(),
                                              CodingParams::{integer(), integer(), integer()}).
 repair_one(BlockWithIdList, RepairId, Coding, CodingParams) ->
-    {BlockList, IdList} = sort_and_split(BlockWithIdList),
+    {BlockList, IdList} = lists:unzip(BlockWithIdList),
     repair_one(BlockList, IdList, RepairId, Coding, CodingParams).
-
-%% @doc Sort and Split BlockIdList to Block List and ID List
-%% @private
-sort_and_split(BlockIdList) ->
-    SortFun = fun (A ,B) ->
-                      {_BlockA, IdA} = A,
-                      {_BlockB, IdB} = B,
-                      IdA =< IdB
-              end,
-    SortedList = lists:sort(SortFun, BlockIdList),
-    {BlockList, IdList} = lists:unzip(SortedList),
-    {BlockList, IdList}.
 
 %% @doc Repeat the Encoding Process
 %% @private
