@@ -29,6 +29,7 @@
 -record(state, {
           coding :: atom(),
           coding_params :: {integer(), integer(), integer()},
+          bin :: binary(),
           bin_size :: integer(),
           block_id_list :: [{binary(), integer()}],
           erasure :: integer()
@@ -50,6 +51,7 @@ new(_Id) ->
     ?debugFmt('Prepared Blocks for ~p ~p [~p Bytes]', [Coding, CodingParams, BinSize]),
     {ok, #state {coding = Coding,
                  coding_params = CodingParams,
+                 bin = Bin,
                  bin_size = BinSize,
                  block_id_list = BlockWithIdList,
                  erasure = Erasure}}.

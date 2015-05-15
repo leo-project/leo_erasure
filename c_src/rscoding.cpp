@@ -5,6 +5,7 @@
 #include "alloc.h"
 
 #include "jerasure.h"
+#include "jerasure_mod.h"
 #include "reed_sol.h"
 
 void RSCoding::checkParams() {
@@ -123,15 +124,6 @@ ErlNifBinary RSCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> bloc
             copySize = min(dataSize - offset, blockSize);
             memcpy(file.data + offset, blockList[i].data, copySize);
         }
-        /*
-        int i = 0;
-        while(offset < dataSize) {
-            size_t copySize = min(dataSize - offset, blockSize);
-            memcpy(file.data + offset, blockList[i].data, copySize);
-            i++;
-            offset += copySize;
-        }
-        */
         
         return file;
     }
@@ -160,7 +152,7 @@ ErlNifBinary RSCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> bloc
     }
 
     int *matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
-    jerasure_matrix_decode(k, m, w, matrix, 1, erasures, dataBlocks, codeBlocks, blockSize);
+    jerasure_matrix_decode_data(k, m, w, matrix, 1, erasures, dataBlocks, codeBlocks, blockSize);
 
     enif_alloc_binary(dataSize, &file);
     memcpy(file.data, tmpMemory, dataSize);

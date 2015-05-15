@@ -277,7 +277,7 @@ repair_one(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
 static ErlNifFunc nif_funcs[] = {
     {"encode", 4, encode},
     {"decode", 5, decode},
-    {"repair_one", 5, repair_one},
+    {"repair_one", 5, repair_one}
 };
 
 ERL_NIF_INIT(leo_jerasure, nif_funcs, NULL, NULL, NULL, NULL)
