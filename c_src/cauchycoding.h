@@ -5,9 +5,9 @@
 
 class CauchyCoding : public Coding {
     public:
-        CauchyCoding(int k, int m, int w) : Coding(k, m, w) {};
-        vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize);
-        ErlNifBinary doDecode(vector<ErlNifBinary> blockList, vector<int> blockIdList, size_t dataSize);
+        CauchyCoding(int k, int m, int w, ErlNifEnv* env) : Coding(k, m, w, env) {};
+        vector<ERL_NIF_TERM> doEncode(ERL_NIF_TERM dataBin);
+        ERL_NIF_TERM doDecode(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, size_t dataSize);
         void checkParams();
 };
 

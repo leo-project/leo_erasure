@@ -18,14 +18,14 @@ typedef enum {
 	LIBERATION = 3,
 } CodingType;
 
-Coding* getCoder(CodingType coding, int k, int m, int w) {
+Coding* getCoder(CodingType coding, int k, int m, int w, ErlNifEnv* env) {
     switch (coding) {
         case CAUCHY_RS:
-            return new CauchyCoding(k,m,w);
+            return new CauchyCoding(k,m,w,env);
         case VAND_RS:
-            return new RSCoding(k,m,w);
+            return new RSCoding(k,m,w,env);
         case LIBERATION:
-            return new LiberationCoding(k,m,w);
+            return new LiberationCoding(k,m,w,env);
         default:
             throw std::invalid_argument("Invalid Coding");
             break;
@@ -44,28 +44,22 @@ CodingType getCoding(char* codingAtom) {
     throw std::invalid_argument("Invalid Coding");
 }
 
-vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize, int k, int m, int w, CodingType coding) {
-    Coding* coder = getCoder(coding, k, m, w);
+vector<ERL_NIF_TERM> doEncode(ERL_NIF_TERM data, CodingType coding, int k, int m, int w, ErlNifEnv* env) {
+    Coding* coder = getCoder(coding, k, m, w, env);
     coder->checkParams();
-    return coder->doEncode(data, dataSize);
-} 
-
-ERL_NIF_TERM doEncode(ErlNifEnv* env, ERL_NIF_TERM data, int k, int m, int w, CodingType coding) {
-    Coding* coder = getCoder(coding, k, m, w);
-    coder->checkParams();
-    return coder->doEncode(env, data);
+    return coder->doEncode(data);
 }
 
-ErlNifBinary doDecode(vector<int> availList, vector<ErlNifBinary> blockList, long long fileSize, int k, int m, int w, CodingType coding) {
-    Coding* coder = getCoder(coding, k, m, w);
+ERL_NIF_TERM doDecode(vector<ERL_NIF_TERM> blockList, vector<int> idList, size_t fileSize, CodingType coding, int k, int m, int w, ErlNifEnv* env) {
+    Coding* coder = getCoder(coding, k, m, w, env);
     coder->checkParams();
-    return coder->doDecode(blockList, availList, fileSize); 
+    return coder->doDecode(blockList, idList, fileSize); 
 }
 
-ErlNifBinary doRepair(vector<int> availList, vector<ErlNifBinary> blockList, int repairId, int k, int m, int w, CodingType coding) {
-    Coding* coder = getCoder(coding, k, m, w);
+ERL_NIF_TERM doRepair(vector<ERL_NIF_TERM> blockList, vector<int> idList, int repairId, CodingType coding, int k, int m, int w, ErlNifEnv* env) {
+    Coding* coder = getCoder(coding, k, m, w, env);
     coder->checkParams();
-    return coder->doRepair(blockList, availList, repairId); 
+    return coder->doRepair(blockList, idList, repairId); 
 }
 
 static ERL_NIF_TERM errTuple(ErlNifEnv *env,const char* message) {
@@ -80,8 +74,6 @@ encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(!enif_inspect_iolist_as_binary(env, argv[0], &in)) {
         return errTuple(env, "Expected Input Bin");
     }
-    size_t dataSize = in.size;
-    unsigned char* data = in.data;
 
     char atomString[64];
     if(!enif_get_atom(env, argv[2], atomString, 64, ERL_NIF_LATIN1)) {
@@ -101,29 +93,15 @@ encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(!enif_get_int(env, tuple[2], &w))
         return errTuple(env,"Invalid W");
 
-    /*
-    vector<ErlNifBinary> blocks;
-    try {
-        CodingType coding = getCoding(atomString);
-        blocks = doEncode(data, dataSize, k, m, w, coding);
-    } catch (std::exception &e) {
-        return errTuple(env, e.what());
-    }
-
-    ERL_NIF_TERM retArr[blocks.size()];
-    for(unsigned int i = 0; i < blocks.size(); ++i) {
-        retArr[i] = enif_make_binary(env, &blocks[i]);
-    }
-    ERL_NIF_TERM blockList = enif_make_list_from_array(env, retArr, blocks.size());
-    */
-
+    vector<ERL_NIF_TERM> blocks;
     ERL_NIF_TERM blockList;
     try {
         CodingType coding = getCoding(atomString);
-        blockList = doEncode(env, argv[0], k, m, w, coding);
+        blocks = doEncode(argv[0], coding, k, m, w, env);
     } catch (std::exception &e) {
         return errTuple(env, e.what());
     }
+    blockList = enif_make_list_from_array(env, &blocks[0], blocks.size());
     ERL_NIF_TERM ok = enif_make_atom(env, "ok");
     return enif_make_tuple2(env, ok, blockList);
 }
@@ -143,10 +121,13 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
         return errTuple(env,"Block List and ID List does not match (different Len)");
     }
 
-    ErlNifBinary blockList1[listLen];
+    vector<ERL_NIF_TERM> blockList;
+    blockList.resize(listLen);
     ERL_NIF_TERM BH;
     ERL_NIF_TERM BT;
-    int availList1[listLen];
+
+    vector<int> idList;
+    idList.resize(listLen);
     ERL_NIF_TERM H;
     ERL_NIF_TERM T;
 
@@ -155,17 +136,18 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     for(unsigned int i = 0; i < listLen; ++i) {
         enif_get_list_cell(env, BT, &BH, &BT);
         enif_get_list_cell(env, T, &H, &T);
+
         ErlNifBinary tmpB;
         if (!enif_inspect_iolist_as_binary(env, BH, &tmpB)) {
             return errTuple(env, "Invalid Block");
         }
-        blockList1[i] = tmpB;
+        blockList[i] = BH;
 
         int tmp;
         if (!enif_get_int(env, H, &tmp)) {
             return errTuple(env, "Invalid ID");
         }
-        availList1[i] = tmp;
+        idList[i] = tmp;
     }
 
 #if SIZEOF_LONG == 8
@@ -195,18 +177,14 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(!enif_get_int(env, tuple[2], &w))
         return errTuple(env,"Invalid W");
 
-    vector<ErlNifBinary> blockList2 (blockList1, blockList1 + listLen);
-    vector<int> availList2 (availList1, availList1 + listLen);
-
-    ErlNifBinary out;
+    ERL_NIF_TERM bin;
     try {
         CodingType coding = getCoding(atomString);
-        out = doDecode(availList2, blockList2, dataSize, k, m, w, coding);
+        bin = doDecode(blockList, idList, dataSize, coding, k, m, w, env);
     } catch (std::exception &e) {
         return errTuple(env,e.what());
     }
 
-    ERL_NIF_TERM bin = enif_make_binary(env, &out);
     ERL_NIF_TERM ok = enif_make_atom(env, "ok");
     return enif_make_tuple2(env, ok, bin);
 }
@@ -226,10 +204,13 @@ repair_one(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
         return errTuple(env,"Block List and ID List does not match (different Len)");
     }
 
-    ErlNifBinary blockList1[listLen];
+    vector<ERL_NIF_TERM> blockList;
+    blockList.resize(listLen);
     ERL_NIF_TERM BH;
     ERL_NIF_TERM BT;
-    int availList1[listLen];
+
+    vector<int> idList;
+    idList.resize(listLen);
     ERL_NIF_TERM H;
     ERL_NIF_TERM T;
 
@@ -238,17 +219,18 @@ repair_one(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     for(unsigned int i = 0; i < listLen; ++i) {
         enif_get_list_cell(env, BT, &BH, &BT);
         enif_get_list_cell(env, T, &H, &T);
+
         ErlNifBinary tmpB;
         if (!enif_inspect_iolist_as_binary(env, BH, &tmpB)) {
             return errTuple(env, "Invalid Block");
         }
-        blockList1[i] = tmpB;
+        blockList[i] = BH;
 
         int tmp;
         if (!enif_get_int(env, H, &tmp)) {
             return errTuple(env, "Invalid ID");
         }
-        availList1[i] = tmp;
+        idList[i] = tmp;
     }
 
     int repairId;
@@ -274,18 +256,14 @@ repair_one(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(!enif_get_int(env, tuple[2], &w))
         return errTuple(env,"Invalid W");
 
-    vector<ErlNifBinary> blockList2 (blockList1, blockList1 + listLen);
-    vector<int> availList2 (availList1, availList1 + listLen);
-
-    ErlNifBinary out;
+    ERL_NIF_TERM bin;
     try {
         CodingType coding = getCoding(atomString);
-        out = doRepair(availList2, blockList2, repairId, k, m, w, coding);
+        bin = doRepair(blockList, idList, repairId, coding, k, m, w, env);
     } catch (std::exception &e) {
         return errTuple(env,e.what());
     }
 
-    ERL_NIF_TERM bin = enif_make_binary(env, &out);
     ERL_NIF_TERM ok = enif_make_atom(env, "ok");
     return enif_make_tuple2(env, ok, bin);
 }
