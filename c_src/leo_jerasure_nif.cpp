@@ -18,7 +18,7 @@ typedef enum {
 	LIBERATION = 3,
 } CodingType;
 
-Coding* getCoding(CodingType coding, int k, int m, int w) {
+Coding* getCoder(CodingType coding, int k, int m, int w) {
     switch (coding) {
         case CAUCHY_RS:
             return new CauchyCoding(k,m,w);
@@ -45,19 +45,25 @@ CodingType getCoding(char* codingAtom) {
 }
 
 vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize, int k, int m, int w, CodingType coding) {
-    Coding* coder = getCoding(coding, k, m, w);
+    Coding* coder = getCoder(coding, k, m, w);
     coder->checkParams();
     return coder->doEncode(data, dataSize);
 } 
 
+ERL_NIF_TERM doEncode(ErlNifEnv* env, ERL_NIF_TERM data, int k, int m, int w, CodingType coding) {
+    Coding* coder = getCoder(coding, k, m, w);
+    coder->checkParams();
+    return coder->doEncode(env, data);
+}
+
 ErlNifBinary doDecode(vector<int> availList, vector<ErlNifBinary> blockList, long long fileSize, int k, int m, int w, CodingType coding) {
-    Coding* coder = getCoding(coding, k, m, w);
+    Coding* coder = getCoder(coding, k, m, w);
     coder->checkParams();
     return coder->doDecode(blockList, availList, fileSize); 
 }
 
 ErlNifBinary doRepair(vector<int> availList, vector<ErlNifBinary> blockList, int repairId, int k, int m, int w, CodingType coding) {
-    Coding* coder = getCoding(coding, k, m, w);
+    Coding* coder = getCoder(coding, k, m, w);
     coder->checkParams();
     return coder->doRepair(blockList, availList, repairId); 
 }
@@ -95,6 +101,7 @@ encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(!enif_get_int(env, tuple[2], &w))
         return errTuple(env,"Invalid W");
 
+    /*
     vector<ErlNifBinary> blocks;
     try {
         CodingType coding = getCoding(atomString);
@@ -108,6 +115,15 @@ encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
         retArr[i] = enif_make_binary(env, &blocks[i]);
     }
     ERL_NIF_TERM blockList = enif_make_list_from_array(env, retArr, blocks.size());
+    */
+
+    ERL_NIF_TERM blockList;
+    try {
+        CodingType coding = getCoding(atomString);
+        blockList = doEncode(env, argv[0], k, m, w, coding);
+    } catch (std::exception &e) {
+        return errTuple(env, e.what());
+    }
     ERL_NIF_TERM ok = enif_make_atom(env, "ok");
     return enif_make_tuple2(env, ok, blockList);
 }
