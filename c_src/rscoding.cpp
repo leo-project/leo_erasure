@@ -96,6 +96,38 @@ vector<ErlNifBinary> RSCoding::doEncode(unsigned char* data, size_t dataSize) {
     return allBlockEntry;
 }
 
+ERL_NIF_TERM RSCoding::doEncode(ErlNifEnv* env, ERL_NIF_TERM dataBin) {
+    int *matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
+    char* dataBlocks[k];
+    char* codeBlocks[m];
+
+    ErlNifBinary data;
+    enif_inspect_binary(env, dataBin, &data);
+
+    size_t dataSize = data.size;
+    size_t blockSize = roundTo((roundTo(dataSize, k*w) / (k*w)), 16) * w;
+
+    enif_realloc_binary(&data, blockSize * (k + m));
+
+    for(int i = 0; i < k + m; ++i) {
+        (i < k) ? dataBlocks[i] = (char*)data.data + i * blockSize:
+            codeBlocks[i - k] = (char*)data.data + i * blockSize;
+    }
+
+    jerasure_matrix_encode(k, m, w, matrix, dataBlocks, codeBlocks, blockSize);
+
+    ERL_NIF_TERM allBlocksBin = enif_make_binary(env, &data);
+
+    ERL_NIF_TERM blockBins[k + m];
+    for(int i = 0 ; i < k + m; ++i) {
+        blockBins[i] = enif_make_sub_binary(env, allBlocksBin, i * blockSize, blockSize);
+    }
+
+    ERL_NIF_TERM blockList = enif_make_list_from_array(env, blockBins, k + m);
+
+    return blockList;
+}
+
 ErlNifBinary RSCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> blockIdList, size_t dataSize) {
 
     ErlNifBinary file;
