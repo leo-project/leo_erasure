@@ -112,3 +112,56 @@ ERL_NIF_TERM RSCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> bloc
     free(matrix);
     return bin;
 }
+
+vector<ERL_NIF_TERM> RSCoding::doRepair(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, vector<int> repairList) {
+
+    set<int> availSet(blockIdList.begin(), blockIdList.end());
+    if (availSet.size() < (unsigned int)k) 
+        throw std::invalid_argument("Not Enough Blocks");
+    else if (availSet.size() < blockIdList.size()) {
+        throw std::invalid_argument("Blocks should be unique");
+    }
+
+    size_t blockSize;
+
+    ErlNifBinary blocks[k + m];
+    for(size_t i = 0; i < blockIdList.size(); ++i) {
+        int blockId = blockIdList[i];
+        enif_inspect_binary(env, blockList[i], &blocks[blockId]);
+        blockSize = blocks[blockId].size;
+    }
+
+    char* dataBlocks[k];
+    char* codeBlocks[m];
+    int erasures[k + m];
+    ErlNifBinary tmpBin;
+    enif_alloc_binary(blockSize * (k + m), &tmpBin);
+    char* tmpMemory = (char*)tmpBin.data;
+
+    int j = 0;
+    for(int i = 0; i < k + m; ++i) {
+        i < k ? dataBlocks[i] = tmpMemory + i * blockSize : codeBlocks[i - k] = tmpMemory + i * blockSize;
+        if (availSet.count(i) == 0) {
+            erasures[j++] = i;
+        } else {
+            memcpy(tmpMemory + i * blockSize, blocks[i].data, blockSize);
+        }
+    }
+    erasures[j] = -1;
+
+    repairList.push_back(-1);
+    int *selected = &repairList[0];
+    int *matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
+    jerasure_matrix_decode_selected(k, m, w, matrix, 1, erasures, selected, dataBlocks, codeBlocks, blockSize);
+    
+    vector<ERL_NIF_TERM> repairBlocks;
+    int repairId;
+    for(size_t i = 0; i < repairList.size() - 1; ++i) {
+        repairId = repairList[i];
+        ERL_NIF_TERM allBlocksBin = enif_make_binary(env, &tmpBin);
+        ERL_NIF_TERM block = enif_make_sub_binary(env, allBlocksBin, repairId * blockSize, blockSize); 
+        repairBlocks.push_back(block);
+    }
+    free(matrix);
+    return repairBlocks; 
+}
