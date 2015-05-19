@@ -35,6 +35,18 @@
           erasure :: integer()
          }).
 
+filter_block(_BlockList, _Cnt, [], Acc) ->
+    Acc;
+filter_block([HB | TB], Cnt, [HF | TF] = FilterList, Acc) ->
+    case Cnt of
+        HF ->
+            filter_block(TB, Cnt + 1, TF, Acc ++ [HB]);
+        _ ->
+            filter_block(TB, Cnt + 1, FilterList, Acc)
+    end.
+filter_block(BlockList, FilterList) ->
+    filter_block(BlockList, 0, FilterList, []).
+
 new(_Id) ->
     Coding = basho_bench_config:get('coding', vandrs),
     CodingParams = basho_bench_config:get('coding_params', {4,2,8}),
@@ -78,5 +90,21 @@ run(decode, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParam
         {error, Cause} ->
             {error, Cause, State};
         _ ->
+            {ok, State}
+    end;
+
+run(repair, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParams, 
+                                   block_id_list = BlockWithIdList, erasure = Erasure } = State) ->
+    Key = KeyGen(),
+    {K, M, _} = CodingParams,
+    FullList = lists:seq(0, K + M - 1),
+    RepairList = [N rem (K + M) || N <- lists:seq(Key, Key + Erasure - 1)],
+    RemainList = lists:subtract(FullList, RepairList),
+    FilterList = filter_block(BlockWithIdList, RemainList),
+    Selected = lists:sublist(FilterList, 1, K),
+    case leo_jerasure:repair(Selected, RepairList, Coding, CodingParams) of
+        {error, Cause} ->
+            {error, Cause, State};
+        {ok, _Blocks} ->
             {ok, State}
     end.
