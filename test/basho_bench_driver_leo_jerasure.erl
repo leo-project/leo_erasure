@@ -72,6 +72,8 @@ run(decode, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParam
     _Key = KeyGen(),
     {K, _, _} = CodingParams,
     Selected = lists:sublist(BlockWithIdList, Erasure + 1, Erasure + K),
+%    ShuffleList = [X||{_,X} <- lists:sort([ {random:uniform(), N} || N <- BlockWithIdList])],
+%    Selected = lists:sublist(ShuffleList, 1, K),
     case leo_jerasure:decode(Selected, BinSize, Coding, CodingParams) of
         {error, Cause} ->
             {error, Cause, State};
