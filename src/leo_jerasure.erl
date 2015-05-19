@@ -161,10 +161,7 @@ decode(BlockWithIdList, FileSize, Coding, CodingParams) ->
                                              Coding::atom(),
                                              CodingParams::{integer(), integer(), integer()}).
 repair(BlockList, IdList, RepairIdList, Coding, CodingParams) ->
-    lists:foldl(fun(RepairId, Acc) ->
-                        Block = repair_one(BlockList, IdList, RepairId, Coding, CodingParams),
-                        [Block | Acc]
-                end, [], RepairIdList).
+    exit(nif_library_not_loaded).
 
 %% @doc Repair Multiple Blocks with Jerasure (NIF) [{Bin, Id}] Interface
 %%
@@ -185,8 +182,9 @@ repair(BlockWithIdList, RepairIdList, Coding, CodingParams) ->
                                              RepairId::integer(),
                                              Coding::atom(),
                                              CodingParams::{integer(), integer(), integer()}).
-repair_one(_BlockList, _IdList, _RepairId, _Coding, _CodingParams) ->
-    exit(nif_library_not_loaded).
+repair_one(BlockList, IdList, RepairId, Coding, CodingParams) ->
+    {ok, RepairList} = repair(BlockList, IdList, [RepairId], Coding, CodingParams),
+    {ok, hd(RepairList)}.
 
 %% @doc Repair One Block with Jerasure (NIF) [{Bin, Id}] Interface
 %%

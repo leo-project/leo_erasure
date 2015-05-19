@@ -56,10 +56,10 @@ ERL_NIF_TERM doDecode(vector<ERL_NIF_TERM> blockList, vector<int> idList, size_t
     return coder->doDecode(blockList, idList, fileSize); 
 }
 
-ERL_NIF_TERM doRepair(vector<ERL_NIF_TERM> blockList, vector<int> idList, int repairId, CodingType coding, int k, int m, int w, ErlNifEnv* env) {
+vector<ERL_NIF_TERM> doRepair(vector<ERL_NIF_TERM> blockList, vector<int> idList, vector<int> repairList, CodingType coding, int k, int m, int w, ErlNifEnv* env) {
     Coding* coder = getCoder(coding, k, m, w, env);
     coder->checkParams();
-    return coder->doRepair(blockList, idList, repairId); 
+    return coder->doRepair(blockList, idList, repairList); 
 }
 
 static ERL_NIF_TERM errTuple(ErlNifEnv *env,const char* message) {
@@ -190,7 +190,7 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
 }
 
 static ERL_NIF_TERM
-repair_one(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+repair(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
 
     unsigned int listLen;
     unsigned int listLen2;
@@ -233,9 +233,22 @@ repair_one(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
         idList[i] = tmp;
     }
 
-    int repairId;
-    if (!enif_get_int(env, argv[2], &repairId)) {
-        return errTuple(env,"Expect repair ID");
+    unsigned int listLen3;
+    if (!enif_get_list_length(env, argv[2], &listLen3)) {
+        return errTuple(env,"Repair ID List Needed");
+    }
+    vector<int> repairList;
+    repairList.resize(listLen3);
+    ERL_NIF_TERM RH;
+    ERL_NIF_TERM RT;
+    RT = argv[2];
+    for(unsigned int i = 0; i < listLen3; ++i) {
+        enif_get_list_cell(env, RT, &RH, &RT);
+        int repairId;
+        if (!enif_get_int(env, RH, &repairId)) {
+            return errTuple(env, "Invalid Repair ID");
+        }
+        repairList[i] = repairId;
     }
 
     char atomString[64];
@@ -256,22 +269,24 @@ repair_one(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(!enif_get_int(env, tuple[2], &w))
         return errTuple(env,"Invalid W");
 
-    ERL_NIF_TERM bin;
+    vector<ERL_NIF_TERM> blocks;
+    ERL_NIF_TERM blockListR;
     try {
         CodingType coding = getCoding(atomString);
-        bin = doRepair(blockList, idList, repairId, coding, k, m, w, env);
+        blocks = doRepair(blockList, idList, repairList, coding, k, m, w, env);
     } catch (std::exception &e) {
         return errTuple(env,e.what());
     }
 
+    blockListR = enif_make_list_from_array(env, &blocks[0], blocks.size());
     ERL_NIF_TERM ok = enif_make_atom(env, "ok");
-    return enif_make_tuple2(env, ok, bin);
+    return enif_make_tuple2(env, ok, blockListR);
 }
 
 static ErlNifFunc nif_funcs[] = {
     {"encode", 4, encode},
     {"decode", 5, decode},
-    {"repair_one", 5, repair_one}
+    {"repair", 5, repair}
 };
 
 ERL_NIF_INIT(leo_jerasure, nif_funcs, NULL, NULL, NULL, NULL)

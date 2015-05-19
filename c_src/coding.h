@@ -15,6 +15,7 @@ class Coding {
 
         virtual vector<ERL_NIF_TERM> doEncode(ERL_NIF_TERM dataBin) = 0;
         virtual ERL_NIF_TERM doDecode(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, size_t dataSize) = 0;
+        virtual vector<ERL_NIF_TERM> doRepair(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, vector<int> repairList);
         virtual ERL_NIF_TERM doRepair(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, int repairId);
         virtual void checkParams() = 0;
     protected:
