@@ -32,7 +32,9 @@
           bin :: binary(),
           bin_size :: integer(),
           block_id_list :: [{binary(), integer()}],
-          erasure :: integer()
+          erasure :: integer(),
+          erasure_comb :: [[integer()]],
+          erasure_comb_size :: integer()
          }).
 
 filter_block(_BlockList, _Cnt, [], Acc) ->
@@ -47,6 +49,13 @@ filter_block([HB | TB], Cnt, [HF | TF] = FilterList, Acc) ->
 filter_block(BlockList, FilterList) ->
     filter_block(BlockList, 0, FilterList, []).
 
+comb(0,_) ->
+    [[]];
+comb(_,[]) ->
+    [];
+comb(N,[H|T]) ->
+    [[H|L] || L <- comb(N-1,T)]++comb(N,T).
+
 new(_Id) ->
     Coding = basho_bench_config:get('coding', vandrs),
     CodingParams = basho_bench_config:get('coding_params', {4,2,8}),
@@ -60,13 +69,20 @@ new(_Id) ->
     IdList = lists:seq(0, N - 1),
     BlockWithIdList = lists:zip(BlockList, IdList),
 
+    {K, M, _} = CodingParams,
+    FullList = lists:seq(0, K + M - 1),
+    ErasureCombs = comb(Erasure, FullList),
+    ErasureCombSize = length(ErasureCombs), 
+
     ?debugFmt('Prepared Blocks for ~p ~p [~p Bytes]', [Coding, CodingParams, BinSize]),
     {ok, #state {coding = Coding,
                  coding_params = CodingParams,
                  bin = Bin,
                  bin_size = BinSize,
                  block_id_list = BlockWithIdList,
-                 erasure = Erasure}}.
+                 erasure = Erasure,
+                 erasure_comb = ErasureCombs,
+                 erasure_comb_size = ErasureCombSize}}.
 
 run(encode, KeyGen, ValGen, #state{ coding = Coding, coding_params = CodingParams } = State) ->
     _Key = KeyGen(),
@@ -80,12 +96,14 @@ run(encode, KeyGen, ValGen, #state{ coding = Coding, coding_params = CodingParam
 
 run(decode, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParams, 
                                    bin_size = BinSize, block_id_list = BlockWithIdList,
-                                   erasure = Erasure } = State) ->
-    _Key = KeyGen(),
-    {K, _, _} = CodingParams,
-    Selected = lists:sublist(BlockWithIdList, Erasure + 1, Erasure + K),
-%    ShuffleList = [X||{_,X} <- lists:sort([ {random:uniform(), N} || N <- BlockWithIdList])],
-%    Selected = lists:sublist(ShuffleList, 1, K),
+                                   erasure_comb = ErasureCombs, erasure_comb_size = ErasureCombSize } = State) ->
+    Key = KeyGen(),
+    {K, M, _} = CodingParams,
+    ErasureList = lists:nth(Key rem ErasureCombSize + 1, ErasureCombs),
+    FullList = lists:seq(0, K + M - 1),
+    RemainList = lists:subtract(FullList, ErasureList),
+    AvailList = lists:sublist(RemainList, 1, K),
+    Selected = filter_block(BlockWithIdList, AvailList),
     case leo_jerasure:decode(Selected, BinSize, Coding, CodingParams) of
         {error, Cause} ->
             {error, Cause, State};
@@ -100,8 +118,8 @@ run(repair, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParam
     FullList = lists:seq(0, K + M - 1),
     RepairList = [N rem (K + M) || N <- lists:seq(Key, Key + Erasure - 1)],
     RemainList = lists:subtract(FullList, RepairList),
-    FilterList = filter_block(BlockWithIdList, RemainList),
-    Selected = lists:sublist(FilterList, 1, K),
+    AvailList = lists:sublist(RemainList, 1, K),
+    Selected = filter_block(BlockWithIdList, AvailList),
     case leo_jerasure:repair(Selected, RepairList, Coding, CodingParams) of
         {error, Cause} ->
             {error, Cause, State};
