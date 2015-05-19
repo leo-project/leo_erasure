@@ -48,7 +48,7 @@ comb(N,[H|T]) ->
     [[H|L] || L <- comb(N-1,T)]++comb(N,T).
 
 repair_test(Bin, Coding, CodingParams) ->
-    ?debugFmt(" * ~p ~p", [Coding, CodingParams]),
+    ?debugFmt(" * ~p ~p (all K + M blocks)", [Coding, CodingParams]),
     {ok, BlockList} = leo_jerasure:encode(Bin, byte_size(Bin), Coding, CodingParams),
     {K, M, _W} = CodingParams,
     FullList = lists:seq(0, K + M - 1),
