@@ -72,19 +72,20 @@ write_blocks(FileName, [H | T], Cnt) ->
 encode_file(FileName) ->
     encode_file(FileName, ?ECODE_CLASS, ?ECODE_PARAMS).
 encode_file(FileName, Coding, CodingParams) ->
-    case file:read_file(FileName) of
-        {ok, FileContent} ->
-            io:format("File Content Length: ~p~n", [byte_size(FileContent)]),
-            {Time, {ok, Blocks}} = timer:tc(?MODULE, encode, [FileContent, byte_size(FileContent),
-                                                              Coding, CodingParams]),
-            io:format("Duration ~p us~n", [Time]),
-            io:format("Number of Blocks: ~p~n", [length(Blocks)]);
-        {error, Reason} ->
-            Blocks = [],
-            erlang:error(Reason)
-    end,
+    Blocks_1 = case file:read_file(FileName) of
+                   {ok, FileContent} ->
+                       io:format("File Content Length: ~p~n", [byte_size(FileContent)]),
+                       {Time, {ok, Blocks}} = timer:tc(?MODULE, encode, [FileContent, byte_size(FileContent),
+                                                                         Coding, CodingParams]),
+                       io:format("Duration ~p us~n", [Time]),
+                       io:format("Number of Blocks: ~p~n", [length(Blocks)]),
+                       Blocks;
+                   {error, Reason} ->
+                       erlang:error(Reason),
+                       []
+               end,
     filelib:ensure_dir(?BLOCKSTOR),
-    write_blocks(FileName, Blocks, 0).
+    write_blocks(FileName, Blocks_1, 0).
 
 %% @doc Read Blocks from Disk, Decode the File and Write with .dec Extension
 %%
