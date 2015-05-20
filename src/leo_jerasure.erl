@@ -26,7 +26,6 @@
 -export([write_blocks/3]).
 -export([encode/4, decode/4, decode/5]).
 -export([repair/4, repair/5]).
--export([repair_one/4, repair_one/5]).
 -export([benchmark_encode/4]).
 
 -on_load(init/0).
@@ -160,7 +159,7 @@ decode(BlockWithIdList, FileSize, Coding, CodingParams) ->
                                              RepairIdList ::[integer()],
                                              Coding::atom(),
                                              CodingParams::{integer(), integer(), integer()}).
-repair(BlockList, IdList, RepairIdList, Coding, CodingParams) ->
+repair(_BlockList, _IdList, _RepairIdList, _Coding, _CodingParams) ->
     exit(nif_library_not_loaded).
 
 %% @doc Repair Multiple Blocks with Jerasure (NIF) [{Bin, Id}] Interface
@@ -173,29 +172,6 @@ repair(BlockList, IdList, RepairIdList, Coding, CodingParams) ->
 repair(BlockWithIdList, RepairIdList, Coding, CodingParams) ->
     {BlockList, IdList} = lists:unzip(BlockWithIdList),
     repair(BlockList, IdList, RepairIdList, Coding, CodingParams).
-
-%% @doc Repair One Block with Jerasure (NIF)
-%%
--spec(repair_one(BlockList, IdList, RepairId, Coding, CodingParams) ->
-        {ok, binary()} | {error, any()} when BlockList::[binary()],
-                                             IdList::[integer()],
-                                             RepairId::integer(),
-                                             Coding::atom(),
-                                             CodingParams::{integer(), integer(), integer()}).
-repair_one(BlockList, IdList, RepairId, Coding, CodingParams) ->
-    {ok, RepairList} = repair(BlockList, IdList, [RepairId], Coding, CodingParams),
-    {ok, hd(RepairList)}.
-
-%% @doc Repair One Block with Jerasure (NIF) [{Bin, Id}] Interface
-%%
--spec(repair_one(BlockWithIdList, RepairId, Coding, CodingParams) ->
-        {ok, binary()} | {error, any()} when BlockWithIdList::[{binary(), integer()}],
-                                             RepairId::integer(),
-                                             Coding::atom(),
-                                             CodingParams::{integer(), integer(), integer()}).
-repair_one(BlockWithIdList, RepairId, Coding, CodingParams) ->
-    {BlockList, IdList} = lists:unzip(BlockWithIdList),
-    repair_one(BlockList, IdList, RepairId, Coding, CodingParams).
 
 %% @doc Repeat the Encoding Process
 %% @private

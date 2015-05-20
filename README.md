@@ -20,10 +20,10 @@ Exported Method
   * `decode/5` ([Block], [BlockID], FileSize, Coding, CodingParameters `{k,m,w}`)
     * Decode blocks back to original binary, interface with [Block] and [BlockID]
 * Block Rebuild
-  * `repair_one/4` ([{Block, BlockID}], RepairID, Coding, CodingParameters `{k,m,w}`)
-    * Repair the block specified with RepairID, interface with [{Block, BlockID}] 
-  * `repair_one/5` ([Block], [BlockID], RepairID, Coding, CodingParameters `{k,m,w}`)
-    * Repair the block specified with RepairID, interface with [Block] and [BlockID] 
+  * `repair/4` ([{Block, BlockID}], [RepairID], Coding, CodingParameters `{k,m,w}`)
+    * Repair the block(s) specified with RepairID list, interface with [{Block, BlockID}] 
+  * `repair/5` ([Block], [BlockID], [RepairID], Coding, CodingParameters `{k,m,w}`)
+    * Repair the block(s) specified with RepairID list, interface with [Block] and [BlockID] 
 * Helper Methods
   * `encode_file/3` (FileName, Coding, CodingParameters `{k,m,w}`)
     * Encode the file and store the data/code blocks at `block/`
