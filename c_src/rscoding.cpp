@@ -162,6 +162,7 @@ vector<ERL_NIF_TERM> RSCoding::doRepair(vector<ERL_NIF_TERM> blockList, vector<i
         ERL_NIF_TERM block = enif_make_sub_binary(env, allBlocksBin, repairId * blockSize, blockSize); 
         repairBlocks.push_back(block);
     }
+
     free(matrix);
     return repairBlocks; 
 }

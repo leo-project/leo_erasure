@@ -14,4 +14,9 @@ int jerasure_schedule_decode_data_lazy(int k, int m, int w,
         int *bitmatrix, int *erasures, 
         char **data_ptrs, char **coding_ptrs, int size, int packetsize,
         int smart);
+int jerasure_schedule_decode_selected_lazy(int k, int m, int w, 
+        int *bitmatrix, int *erasures, 
+        int *selected,
+        char **data_ptrs, char **coding_ptrs, int size, int packetsize,
+        int smart);
 #endif
