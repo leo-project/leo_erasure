@@ -33,8 +33,8 @@
           bin_size :: integer(),
           block_id_list :: [{binary(), integer()}],
           erasure :: integer(),
-          erasure_comb :: [[integer()]],
-          erasure_comb_size :: integer()
+          decode_comb :: [[integer()]],
+          decode_comb_size :: integer()
          }).
 
 filter_block(_BlockList, _Cnt, [], Acc) ->
@@ -71,8 +71,8 @@ new(_Id) ->
 
     {K, M, _} = CodingParams,
     FullList = lists:seq(0, K + M - 1),
-    ErasureCombs = comb(Erasure, FullList),
-    ErasureCombSize = length(ErasureCombs), 
+    DecodeCombs = comb(K, FullList),
+    DecodeCombSize = length(DecodeCombs), 
 
     ?debugFmt('Prepared Blocks for ~p ~p [~p Bytes]', [Coding, CodingParams, BinSize]),
     {ok, #state {coding = Coding,
@@ -81,8 +81,8 @@ new(_Id) ->
                  bin_size = BinSize,
                  block_id_list = BlockWithIdList,
                  erasure = Erasure,
-                 erasure_comb = ErasureCombs,
-                 erasure_comb_size = ErasureCombSize}}.
+                 decode_comb = DecodeCombs,
+                 decode_comb_size = DecodeCombSize}}.
 
 run(encode, KeyGen, ValGen, #state{ coding = Coding, coding_params = CodingParams } = State) ->
     _Key = KeyGen(),
@@ -96,13 +96,9 @@ run(encode, KeyGen, ValGen, #state{ coding = Coding, coding_params = CodingParam
 
 run(decode, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParams, 
                                    bin_size = BinSize, block_id_list = BlockWithIdList,
-                                   erasure_comb = ErasureCombs, erasure_comb_size = ErasureCombSize } = State) ->
+                                   decode_comb = DecodeCombs, decode_comb_size = DecodeCombSize } = State) ->
     Key = KeyGen(),
-    {K, M, _} = CodingParams,
-    ErasureList = lists:nth(Key rem ErasureCombSize + 1, ErasureCombs),
-    FullList = lists:seq(0, K + M - 1),
-    RemainList = lists:subtract(FullList, ErasureList),
-    AvailList = lists:sublist(RemainList, 1, K),
+    AvailList = lists:nth(Key rem DecodeCombSize + 1, DecodeCombs),
     Selected = filter_block(BlockWithIdList, AvailList),
     case leo_jerasure:decode(Selected, BinSize, Coding, CodingParams) of
         {error, Cause} ->
