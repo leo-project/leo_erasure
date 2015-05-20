@@ -534,53 +534,6 @@ static int **jerasure_generate_decoding_data_schedule(int k, int m, int w, int *
         free(inverse);
     } 
 
-    /* Next, here comes the hard part.  For each coding node that needs
-       to be decoded, you start by putting its rows of the distribution
-       matrix into the decoding matrix.  If there were no failed data
-       nodes, then you're done.  However, if there have been failed
-       data nodes, then you need to modify the columns that correspond
-       to the data nodes.  You do that by first zeroing them.  Then
-       whereever there is a one in the distribution matrix, you XOR
-       in the corresponding row from the failed data node's entry in
-       the decoding matrix.  The whole process kind of makes my head
-       spin, but it works.
-       */
-
-    /*
-    for (x = 0; x < cdf; x++) {
-        drive = row_ids[x+ddf+k]-k;
-        ptr = real_decoding_matrix + k*w*w*(ddf+x);
-        memcpy(ptr, bitmatrix+drive*k*w*w, sizeof(int)*k*w*w);
-
-        for (i = 0; i < k; i++) {
-            if (row_ids[i] != i) {
-                for (j = 0; j < w; j++) {
-                    bzero(ptr+j*k*w+i*w, sizeof(int)*w);
-                }
-            }  
-        }
-
-        // There's the yucky part 
-
-        index = drive*k*w*w;
-        for (i = 0; i < k; i++) {
-            if (row_ids[i] != i) {
-                b1 = real_decoding_matrix+(ind_to_row[i]-k)*k*w*w;
-                for (j = 0; j < w; j++) {
-                    b2 = ptr + j*k*w;
-                    for (y = 0; y < w; y++) {
-                        if (bitmatrix[index+j*k*w+i*w+y]) {
-                            for (z = 0; z < k*w; z++) {
-                                b2[z] = b2[z] ^ b1[z+y*k*w];
-                            }
-                        }
-                    }
-                }
-            }  
-        }
-    }
-    */
-
     /*
        printf("\n\nReal Decoding Matrix\n\n");
        jerasure_print_bitmatrix(real_decoding_matrix, (ddf+cdf)*w, k*w, w);
@@ -644,10 +597,11 @@ static int **jerasure_generate_decoding_selected_schedule(
        will do a good job.    This matrix has w*e rows, where e is the
        number of erasures (ddf+cdf) */
 
+    int decoding_matrix_size = data_fix_size;
     if (fix_all_data)
-        real_decoding_matrix = talloc(int, k*w*(ddf + code_fix_size)*w);
-    else
-        real_decoding_matrix = talloc(int, k*w*(data_fix_size)*w);
+        decoding_matrix_size = ddf + code_fix_size;
+        
+    real_decoding_matrix = talloc(int, k*w*w*decoding_matrix_size);
     if (!real_decoding_matrix) {
         free(row_ids);
         free(ind_to_row);
@@ -762,9 +716,9 @@ static int **jerasure_generate_decoding_selected_schedule(
        jerasure_print_bitmatrix(real_decoding_matrix, (ddf+cdf)*w, k*w, w);
        printf("\n"); */
     if (smart) {
-        schedule = jerasure_smart_bitmatrix_to_schedule(k, ddf, w, real_decoding_matrix);
+        schedule = jerasure_smart_bitmatrix_to_schedule(k, decoding_matrix_size, w, real_decoding_matrix);
     } else {
-        schedule = jerasure_dumb_bitmatrix_to_schedule(k, ddf, w, real_decoding_matrix);
+        schedule = jerasure_dumb_bitmatrix_to_schedule(k, decoding_matrix_size, w, real_decoding_matrix);
     }
     free(row_ids);
     free(ind_to_row);
