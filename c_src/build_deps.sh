@@ -39,13 +39,15 @@ case "$1" in
     get-deps)
         export GFP=`pwd`"/gf-complete"
         if [ ! -d gf-complete/src/.libs ]; then
-            git clone http://lab.jerasure.org/jerasure/gf-complete.git
+            git clone https://github.com/windkit/gf-complete.git
+#            git clone http://lab.jerasure.org/jerasure/gf-complete.git
             cd gf-complete
             ($LIBTOOLIZE && ./autogen.sh && ./configure && $MAKE)
             cd ..
         fi
         if [ ! -d jerasure/src/.libs ]; then
-            git clone http://lab.jerasure.org/jerasure/jerasure.git
+            git clone https://github.com/windkit/jerasure.git
+#            git clone http://lab.jerasure.org/jerasure/jerasure.git
             cd jerasure
             ($LIBTOOLIZE && autoreconf --install && ./configure LDFLAGS=-L$GFP/src/.libs/ CPPFLAGS=-I$GFP/include && $MAKE)
             cd ..
@@ -55,13 +57,15 @@ case "$1" in
     *)
         export GFP=`pwd`"/gf-complete"
         if [ ! -d gf-complete/src/.libs ]; then
-            git clone http://lab.jerasure.org/jerasure/gf-complete.git
+            git clone https://github.com/windkit/gf-complete.git
+#            git clone http://lab.jerasure.org/jerasure/gf-complete.git
             cd gf-complete
             ($LIBTOOLIZE && ./autogen.sh && ./configure && $MAKE)
             cd ..
         fi
         if [ ! -d jerasure/src/.libs ]; then
-            git clone http://lab.jerasure.org/jerasure/jerasure.git
+            git clone https://github.com/windkit/jerasure.git
+#            git clone http://lab.jerasure.org/jerasure/jerasure.git
             cd jerasure
             ($LIBTOOLIZE && autoreconf --install && ./configure LDFLAGS=-L$GFP/src/.libs/ CPPFLAGS=-I$GFP/include && $MAKE)
             cd ..
