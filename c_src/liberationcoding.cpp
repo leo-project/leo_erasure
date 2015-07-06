@@ -1,21 +1,24 @@
 #include <string.h>
 #include <set>
 
-#include "rscoding.h"
+#include "liberationcoding.h"
 
 #include "jerasure.h"
 #include "jerasure_mod.h"
-#include "reed_sol.h"
+#include "liberation.h"
 
-void RSCoding::checkParams() {
-    if (k <= 0 || m <= 0 || w <= 0)
-        throw std::invalid_argument("Invalid Coding Parameters");
-	if (w != 8 && w != 16 && w != 32) 
-        throw std::invalid_argument("Invalid Coding Parameters (w = 8/16/32)");
+void LiberationCoding::checkParams() {
+    if (k <= 0 || m != 2 || w <= 0)
+        throw std::invalid_argument("Invalid Coding Parameters (m = 2)");
+    if (k > w)
+        throw std::invalid_argument("Invalid Coding Parameters (k <= w)");
+	if (w <= 2 || !(w%2) || !is_prime(w))
+        throw std::invalid_argument("Invalid Coding Parameters (w is prime)");
 }
 
-vector<ERL_NIF_TERM> RSCoding::doEncode(ERL_NIF_TERM dataBin) {
-    int *matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
+vector<ERL_NIF_TERM> LiberationCoding::doEncode(ERL_NIF_TERM dataBin) {
+    int *bitmatrix = liberation_coding_bitmatrix(k, w);
+    int **smart = jerasure_smart_bitmatrix_to_schedule(k, m, w, bitmatrix);
 
     char* dataBlocks[k];
     char* codeBlocks[m];
@@ -33,7 +36,7 @@ vector<ERL_NIF_TERM> RSCoding::doEncode(ERL_NIF_TERM dataBin) {
             codeBlocks[i - k] = (char*)data.data + i * blockSize;
     }
 
-    jerasure_matrix_encode(k, m, w, matrix, dataBlocks, codeBlocks, blockSize);
+    jerasure_schedule_encode(k, m, w, smart, dataBlocks, codeBlocks, blockSize, blockSize / w);
 
     ERL_NIF_TERM allBlocksBin = enif_make_binary(env, &data);
 
@@ -42,12 +45,13 @@ vector<ERL_NIF_TERM> RSCoding::doEncode(ERL_NIF_TERM dataBin) {
         blockList.push_back(enif_make_sub_binary(env, allBlocksBin, i * blockSize, blockSize));
     }
 
-    free(matrix);
+    jerasure_free_schedule(smart);
+    free(bitmatrix);
 
     return blockList;
 }
 
-ERL_NIF_TERM RSCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, size_t dataSize) {
+ERL_NIF_TERM LiberationCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, size_t dataSize) {
 
     set<int> availSet(blockIdList.begin(), blockIdList.end());
     if (availSet.size() < (unsigned int)k) 
@@ -71,6 +75,7 @@ ERL_NIF_TERM RSCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> bloc
         if (availSet.count(i) == 0) {
             needFix = true;
         }
+
 
     if (!needFix) {
         ErlNifBinary file;
@@ -103,17 +108,17 @@ ERL_NIF_TERM RSCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> bloc
     }
     erasures[j] = -1;
 
-    int *matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
-    jerasure_matrix_decode_data(k, m, w, matrix, 1, erasures, dataBlocks, codeBlocks, blockSize);
+    int *bitmatrix = liberation_coding_bitmatrix(k, w);
+    jerasure_schedule_decode_data_lazy(k, m, w, bitmatrix, erasures, dataBlocks, codeBlocks, blockSize, blockSize / w, 0);
 
     ERL_NIF_TERM allBlocksBin = enif_make_binary(env, &tmpBin);
     ERL_NIF_TERM bin = enif_make_sub_binary(env, allBlocksBin, 0, dataSize);
 
-    free(matrix);
+    free(bitmatrix);
     return bin;
 }
 
-vector<ERL_NIF_TERM> RSCoding::doRepair(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, vector<int> repairList) {
+vector<ERL_NIF_TERM> LiberationCoding::doRepair(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, vector<int> repairList) {
 
     set<int> availSet(blockIdList.begin(), blockIdList.end());
     if (availSet.size() < (unsigned int)k) 
@@ -151,9 +156,9 @@ vector<ERL_NIF_TERM> RSCoding::doRepair(vector<ERL_NIF_TERM> blockList, vector<i
 
     repairList.push_back(-1);
     int *selected = &repairList[0];
-    int *matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
-    jerasure_matrix_decode_selected(k, m, w, matrix, 1, erasures, selected, dataBlocks, codeBlocks, blockSize);
-    
+    int *bitmatrix = liberation_coding_bitmatrix(k, w);
+    jerasure_schedule_decode_selected_lazy(k, m, w, bitmatrix, erasures, selected, dataBlocks, codeBlocks, blockSize, blockSize / w, 0);
+
     vector<ERL_NIF_TERM> repairBlocks;
     int repairId;
     for(size_t i = 0; i < repairList.size() - 1; ++i) {
@@ -163,6 +168,6 @@ vector<ERL_NIF_TERM> RSCoding::doRepair(vector<ERL_NIF_TERM> blockList, vector<i
         repairBlocks.push_back(block);
     }
 
-    free(matrix);
-    return repairBlocks; 
+    free(bitmatrix);
+    return repairBlocks;
 }

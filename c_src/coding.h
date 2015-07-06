@@ -2,6 +2,7 @@
 #define __CODING_H__
 
 #include <vector>
+#include <stdexcept>
 using namespace std;
 
 #include "common.h"
@@ -10,15 +11,15 @@ using namespace std;
 
 class Coding {
     public:
-        Coding(int _k, int _m, int _w) : k(_k), m(_m), w(_w) {};
+        Coding(int _k, int _m, int _w, ErlNifEnv* _env) : k(_k), m(_m), w(_w), env(_env) {};
 
-        virtual vector<ErlNifBinary> doEncode(unsigned char* data, size_t dataSize) = 0;
-        virtual ErlNifBinary doDecode(vector<ErlNifBinary> blockList, vector<int> blockIdList, size_t dataSize) = 0;
-
-//        virtual vector<BlockEntry> doEncode(unsigned char* data, size_t dataSize) = 0;
-//        virtual BlockEntry doDecode(vector<BlockEntry> blockList, vector<int> blockIdList, size_t dataSize) = 0;
+        virtual vector<ERL_NIF_TERM> doEncode(ERL_NIF_TERM dataBin) = 0;
+        virtual ERL_NIF_TERM doDecode(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, size_t dataSize) = 0;
+        virtual vector<ERL_NIF_TERM> doRepair(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, vector<int> repairList);
+        virtual void checkParams() = 0;
     protected:
         int k, m, w;
+        ErlNifEnv* env;
 };
 
 #endif

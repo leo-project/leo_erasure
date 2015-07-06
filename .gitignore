@@ -52,3 +52,6 @@ erl_crash.dump
 rel/example_project
 .concrete/DEV_MODE
 .rebar
+
+c_src/gf-complete
+c_src/jerasure

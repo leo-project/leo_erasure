@@ -2,120 +2,175 @@
 #include <set>
 
 #include "cauchycoding.h"
-#include "alloc.h"
 
 #include "jerasure.h"
+#include "jerasure_mod.h"
 #include "cauchy.h"
 
-vector<ErlNifBinary> CauchyCoding::doEncode(unsigned char* data, size_t dataSize) {
-//vector<BlockEntry> CauchyCoding::doEncode(unsigned char* data, size_t dataSize) {
-//    vector<BlockEntry> allBlockEntry;
-    vector<ErlNifBinary> allBlockEntry;
+void CauchyCoding::checkParams() {
+    if (k <= 0 || m <= 0 || w <= 0)
+        throw std::invalid_argument("Invalid Coding Parameters");
+    if ((k + m) > (1 << w))
+        throw std::invalid_argument("Invalid Coding Parameters (larger w)");
+}
 
+vector<ERL_NIF_TERM> CauchyCoding::doEncode(ERL_NIF_TERM dataBin) {
     int *matrix = cauchy_good_general_coding_matrix(k, m, w);
     int *bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
     int **smart = jerasure_smart_bitmatrix_to_schedule(k, m, w, bitmatrix);
 
-    size_t blockSize = roundTo((roundTo(dataSize, k*w) / (k*w)), 4) * w;
+    char* dataBlocks[k];
+    char* codeBlocks[m];
 
-    char** dataBlocks = (char**)alloc(sizeof(char*) * k);
-    char** codeBlocks = (char**)alloc(sizeof(char*) * m);
+    ErlNifBinary data;
+    enif_inspect_binary(env, dataBin, &data);
 
-    size_t offset = 0;
-    for(int i = 0; i < k; ++i) {
-        ErlNifBinary tmpBlock;
-        enif_alloc_binary(blockSize, &tmpBlock);
-        dataBlocks[i] = (char*)tmpBlock.data;
-        
-        /*
-        dataBlocks[i] = (char*)alloc(blockSize);
+    size_t dataSize = data.size;
+    size_t blockSize = roundTo((roundTo(dataSize, k*w) / (k*w)), 16) * w;
 
-        BlockEntry tmpBlock;
-        tmpBlock.data = (unsigned char*)dataBlocks[i];
-        tmpBlock.size = blockSize;
-        */
+    enif_realloc_binary(&data, blockSize * (k + m));
 
-        allBlockEntry.push_back(tmpBlock);
-
-        if (i == k - 1) {
-            memset(dataBlocks[i], 0, blockSize);
-            memcpy(dataBlocks[i], data + offset, dataSize - offset);
-        } else {
-            memcpy(dataBlocks[i], data + offset, blockSize);
-        }
-        offset += blockSize;
-    }
-
-    for(int i = 0; i < m; ++i) {
-        ErlNifBinary tmpBlock;
-        enif_alloc_binary(blockSize, &tmpBlock);
-        codeBlocks[i] = (char*)tmpBlock.data;
-        
-        /*
-        codeBlocks[i] = (char*)alloc(blockSize);
-
-        BlockEntry tmpBlock;
-        tmpBlock.data = (unsigned char*)codeBlocks[i];
-        tmpBlock.size = blockSize;
-        */
-
-        allBlockEntry.push_back(tmpBlock);
+    for(int i = 0; i < k + m; ++i) {
+        (i < k) ? dataBlocks[i] = (char*)data.data + i * blockSize:
+            codeBlocks[i - k] = (char*)data.data + i * blockSize;
     }
 
     jerasure_schedule_encode(k, m, w, smart, dataBlocks, codeBlocks, blockSize, blockSize / w);
 
-    dealloc(dataBlocks);
-    dealloc(codeBlocks);
-    return allBlockEntry;
+    ERL_NIF_TERM allBlocksBin = enif_make_binary(env, &data);
+
+    vector<ERL_NIF_TERM> blockList;
+    for(int i = 0 ; i < k + m; ++i) {
+        blockList.push_back(enif_make_sub_binary(env, allBlocksBin, i * blockSize, blockSize));
+    }
+
+    jerasure_free_schedule(smart);
+    free(bitmatrix);
+    free(matrix);
+
+    return blockList;
 }
 
-//BlockEntry CauchyCoding::doDecode(vector<BlockEntry> blockList, vector<int> blockIdList, size_t dataSize) {
-ErlNifBinary CauchyCoding::doDecode(vector<ErlNifBinary> blockList, vector<int> blockIdList, size_t dataSize) {
+ERL_NIF_TERM CauchyCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, size_t dataSize) {
 
-    ErlNifBinary file;
-
-    char** dataBlocks = (char**)alloc(sizeof(char*) * k);
-    char** codeBlocks = (char**)alloc(sizeof(char*) * m);
-    int erasures[k + m];
-    size_t blockSize = blockList[0].size;
     set<int> availSet(blockIdList.begin(), blockIdList.end());
+    if (availSet.size() < (unsigned int)k) 
+        throw std::invalid_argument("Not Enough Blocks");
+    else if (availSet.size() < blockIdList.size()) {
+        throw std::invalid_argument("Blocks should be unique");
+    }
+
+    size_t blockSize;
+
+    ErlNifBinary blocks[k + m];
+    for(size_t i = 0; i < blockIdList.size(); ++i) {
+        int blockId = blockIdList[i];
+        enif_inspect_binary(env, blockList[i], &blocks[blockId]);
+        blockSize = blocks[blockId].size;
+    }
+
+    bool needFix = false;
+
+    for(int i = 0; i < k; ++i) 
+        if (availSet.count(i) == 0) {
+            needFix = true;
+        }
+
+    if (!needFix) {
+        ErlNifBinary file;
+        enif_alloc_binary(dataSize, &file);
+        size_t copySize, offset = 0;
+        for(int i = 0; i < k; ++i) {
+            offset = i * blockSize;
+            copySize = min(dataSize - offset, blockSize);
+            memcpy(file.data + offset, blocks[i].data, copySize);
+        }
+        ERL_NIF_TERM bin = enif_make_binary(env, &file);
+        return bin;
+    }
+
+    char* dataBlocks[k];
+    char* codeBlocks[m];
+    int erasures[k + m];
+    ErlNifBinary tmpBin;
+    enif_alloc_binary(blockSize * (k + m), &tmpBin);
+    char* tmpMemory = (char*)tmpBin.data;
 
     int j = 0;
     for(int i = 0; i < k + m; ++i) {
-        i < k ? dataBlocks[i] = (char*)alloc(blockSize) : codeBlocks[i - k] = (char*)alloc(blockSize);
+        i < k ? dataBlocks[i] = tmpMemory + i * blockSize : codeBlocks[i - k] = tmpMemory + i * blockSize;
         if (availSet.count(i) == 0) {
             erasures[j++] = i;
+        } else {
+            memcpy(tmpMemory + i * blockSize, blocks[i].data, blockSize);
         }
     }
     erasures[j] = -1;
 
-    for(size_t i = 0; i < blockList.size(); ++i) {
-        int blockId = blockIdList[i];
-        if (blockId < k) {
-            memcpy(dataBlocks[blockId], blockList[i].data, blockSize);
-        } else {
-            memcpy(codeBlocks[blockId - k], blockList[i].data, blockSize);
-        }
-    }
-
     int *matrix = cauchy_good_general_coding_matrix(k, m, w);
     int *bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
-    jerasure_schedule_decode_lazy(k, m, w, bitmatrix, erasures, dataBlocks, codeBlocks, blockSize, blockSize / w, 1);
+    jerasure_schedule_decode_data_lazy(k, m, w, bitmatrix, erasures, dataBlocks, codeBlocks, blockSize, blockSize / w, 1);
 
-    enif_alloc_binary(dataSize, &file);
-    size_t offset = 0;
-    int i = 0;
-    while(offset < dataSize) {
-        size_t copySize = min(dataSize - offset, blockSize);
-        memcpy(file.data + offset, dataBlocks[i], copySize);
-        i++;
-        offset += copySize;
+    ERL_NIF_TERM allBlocksBin = enif_make_binary(env, &tmpBin);
+    ERL_NIF_TERM bin = enif_make_sub_binary(env, allBlocksBin, 0, dataSize);
+
+    free(matrix);
+    free(bitmatrix);
+    return bin;
+}
+
+vector<ERL_NIF_TERM> CauchyCoding::doRepair(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, vector<int> repairList) {
+
+    set<int> availSet(blockIdList.begin(), blockIdList.end());
+    if (availSet.size() < (unsigned int)k) 
+        throw std::invalid_argument("Not Enough Blocks");
+    else if (availSet.size() < blockIdList.size()) {
+        throw std::invalid_argument("Blocks should be unique");
     }
 
+    size_t blockSize;
+
+    ErlNifBinary blocks[k + m];
+    for(size_t i = 0; i < blockIdList.size(); ++i) {
+        int blockId = blockIdList[i];
+        enif_inspect_binary(env, blockList[i], &blocks[blockId]);
+        blockSize = blocks[blockId].size;
+    }
+
+    char* dataBlocks[k];
+    char* codeBlocks[m];
+    int erasures[k + m];
+    ErlNifBinary tmpBin;
+    enif_alloc_binary(blockSize * (k + m), &tmpBin);
+    char* tmpMemory = (char*)tmpBin.data;
+
+    int j = 0;
     for(int i = 0; i < k + m; ++i) {
-        i < k ? dealloc(dataBlocks[i]) : dealloc(codeBlocks[i - k]);
+        i < k ? dataBlocks[i] = tmpMemory + i * blockSize : codeBlocks[i - k] = tmpMemory + i * blockSize;
+        if (availSet.count(i) == 0) {
+            erasures[j++] = i;
+        } else {
+            memcpy(tmpMemory + i * blockSize, blocks[i].data, blockSize);
+        }
     }
-    dealloc(dataBlocks);
-    dealloc(codeBlocks);
-    return file;
+    erasures[j] = -1;
+
+    repairList.push_back(-1);
+    int *selected = &repairList[0];
+    int *matrix = cauchy_good_general_coding_matrix(k, m, w);
+    int *bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
+    jerasure_schedule_decode_selected_lazy(k, m, w, bitmatrix, erasures, selected, dataBlocks, codeBlocks, blockSize, blockSize / w, 0);
+
+    vector<ERL_NIF_TERM> repairBlocks;
+    int repairId;
+    for(size_t i = 0; i < repairList.size() - 1; ++i) {
+        repairId = repairList[i];
+        ERL_NIF_TERM allBlocksBin = enif_make_binary(env, &tmpBin);
+        ERL_NIF_TERM block = enif_make_sub_binary(env, allBlocksBin, repairId * blockSize, blockSize); 
+        repairBlocks.push_back(block);
+    }
+
+    free(bitmatrix);
+    free(matrix);
+    return repairBlocks;
 }
