@@ -32,10 +32,36 @@
 
 -type(coding_params() :: {pos_integer(), pos_integer(), pos_integer()}).
 
+-define(DEF_CODING_VANDRS_K,    10).
+-define(DEF_CODING_CAUCHYRS_K,   4).
+-define(DEF_CODING_LIBERATION_K, 4).
+
+-define(DEF_CODING_VANDRS_M,     4).
+-define(DEF_CODING_CAUCHYRS_M,   2).
+-define(DEF_CODING_LIBERATION_M, 2).
+
 -define(DEF_CODING_VANDRS_W,     8).
 -define(DEF_CODING_CAUCHYRS_W,   3).
 -define(DEF_CODING_LIBERATION_W, 7).
 
+-define(coding_params_k(_CodingClass),
+        case _CodingClass of
+            ?CODING_CLASS_VANDRS ->
+                ?DEF_CODING_VANDRS_K;
+            ?CODING_CLASS_CAUCHYRS ->
+                ?DEF_CODING_CAUCHYRS_K;
+            ?CODING_CLASS_LIBERATION ->
+                ?DEF_CODING_LIBERATION_K
+        end).
+-define(coding_params_m(_CodingClass),
+        case _CodingClass of
+            ?CODING_CLASS_VANDRS ->
+                ?DEF_CODING_VANDRS_M;
+            ?CODING_CLASS_CAUCHYRS ->
+                ?DEF_CODING_CAUCHYRS_M;
+            ?CODING_CLASS_LIBERATION ->
+                ?DEF_CODING_LIBERATION_M
+        end).
 -define(coding_params_w(_CodingClass),
         case _CodingClass of
             ?CODING_CLASS_VANDRS ->
