@@ -53,13 +53,13 @@ vector<ERL_NIF_TERM> doEncode(ERL_NIF_TERM data, CodingType coding, int k, int m
 ERL_NIF_TERM doDecode(vector<ERL_NIF_TERM> blockList, vector<int> idList, size_t fileSize, CodingType coding, int k, int m, int w, ErlNifEnv* env) {
     Coding* coder = getCoder(coding, k, m, w, env);
     coder->checkParams();
-    return coder->doDecode(blockList, idList, fileSize); 
+    return coder->doDecode(blockList, idList, fileSize);
 }
 
 vector<ERL_NIF_TERM> doRepair(vector<ERL_NIF_TERM> blockList, vector<int> idList, vector<int> repairList, CodingType coding, int k, int m, int w, ErlNifEnv* env) {
     Coding* coder = getCoder(coding, k, m, w, env);
     coder->checkParams();
-    return coder->doRepair(blockList, idList, repairList); 
+    return coder->doRepair(blockList, idList, repairList);
 }
 
 static ERL_NIF_TERM errTuple(ErlNifEnv *env,const char* message) {
@@ -68,21 +68,23 @@ static ERL_NIF_TERM errTuple(ErlNifEnv *env,const char* message) {
     return enif_make_tuple2(env, error, reason);
 }
 
+
+
 static ERL_NIF_TERM
 encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     ErlNifBinary in;
-    if(!enif_inspect_iolist_as_binary(env, argv[0], &in)) {
+    if(!enif_inspect_iolist_as_binary(env, argv[2], &in)) {
         return errTuple(env, "Expected Input Bin");
     }
 
     char atomString[64];
-    if(!enif_get_atom(env, argv[2], atomString, 64, ERL_NIF_LATIN1)) {
+    if(!enif_get_atom(env, argv[0], atomString, 64, ERL_NIF_LATIN1)) {
         return errTuple(env,"Expect coding");
     }
-    
+
     const ERL_NIF_TERM* tuple;
     int cnt;
-    if(!enif_get_tuple(env, argv[3], &cnt, &tuple)) {
+    if(!enif_get_tuple(env, argv[1], &cnt, &tuple)) {
         return errTuple(env,"Expect tuple for coding parameters");
     }
     int k,m,w;
@@ -97,7 +99,7 @@ encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     ERL_NIF_TERM blockList;
     try {
         CodingType coding = getCoding(atomString);
-        blocks = doEncode(argv[0], coding, k, m, w, env);
+        blocks = doEncode(argv[2], coding, k, m, w, env);
     } catch (std::exception &e) {
         return errTuple(env, e.what());
     }
@@ -105,6 +107,7 @@ encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     ERL_NIF_TERM ok = enif_make_atom(env, "ok");
     return enif_make_tuple2(env, ok, blockList);
 }
+
 
 static ERL_NIF_TERM
 decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
@@ -163,7 +166,7 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(!enif_get_atom(env, argv[3], atomString, 64, ERL_NIF_LATIN1)) {
         return errTuple(env,"Expect coding");
     }
-    
+
     const ERL_NIF_TERM* tuple;
     int cnt;
     if(!enif_get_tuple(env, argv[4], &cnt, &tuple)) {
@@ -255,7 +258,7 @@ repair(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(!enif_get_atom(env, argv[3], atomString, 64, ERL_NIF_LATIN1)) {
         return errTuple(env,"Expect coding");
     }
-    
+
     const ERL_NIF_TERM* tuple;
     int cnt;
     if(!enif_get_tuple(env, argv[4], &cnt, &tuple)) {

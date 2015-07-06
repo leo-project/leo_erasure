@@ -49,7 +49,7 @@ comb(N,[H|T]) ->
 
 repair_test(Bin, Coding, CodingParams, Erasure) ->
     ?debugFmt(" * ~p ~p with ~p failures(all cases)", [Coding, CodingParams, Erasure]),
-    {ok, BlockList} = leo_jerasure:encode(Bin, byte_size(Bin), Coding, CodingParams),
+    {ok, BlockList} = leo_jerasure:encode(Coding, CodingParams, Bin),
     {K, M, _W} = CodingParams,
     FullList = lists:seq(0, K + M - 1),
     ErasureCombs = comb(Erasure, FullList),
@@ -74,7 +74,6 @@ decode_test(Bin, BlockList, Coding, CodingParams, Failures) ->
                    BlockIdList = lists:zip(AvailBlocks, AvailList),
                    ShuffleList = [X||{_,X} <- lists:sort([ {random:uniform(), N} || N <- BlockIdList])],
                    {ok, OutBin} = leo_jerasure:decode(ShuffleList, byte_size(Bin), Coding, CodingParams),
-%                   {ok, OutBin} = leo_jerasure:decode(AvailBlocks, AvailList, byte_size(Bin), Coding, CodingParams),
                    case OutBin of
                        Bin ->
                            ok;
@@ -94,7 +93,9 @@ decode_test(Bin, BlockList, Coding, CodingParams, Failures) ->
 
 correctness_test(Bin, Coding, CodingParams, Failures) ->
     ?debugFmt(" * ~p ~p with ~p failures (all cases)", [Coding, CodingParams, Failures]),
-    {ok, BlockList} = leo_jerasure:encode(Bin, byte_size(Bin), Coding, CodingParams),
+    {ok, BlockList} = leo_jerasure:encode(Coding, CodingParams, Bin),
+    {K, M,_W} = CodingParams,
+    ?assertEqual(K+M, erlang:length(BlockList)),
     ok = decode_test(Bin, BlockList, Coding, CodingParams, Failures).
 
 bench_encode_test() ->
@@ -107,37 +108,37 @@ parameters_test() ->
     ?debugMsg(" ===== Testing Parameters ====="),
     Bin = crypto:rand_bytes(1024),
     ?debugMsg(" * Invalid: vandrs {4,2,7}"),
-    {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), vandrs, {4,2,7}),
+    {error, _} = leo_jerasure:encode(vandrs, {4,2,7}, Bin),
 
     ?debugMsg(" * Invalid: vandrs {4,2,8} with 3 failures"),
-    {ok, BlockList} = leo_jerasure:encode(Bin, byte_size(Bin), vandrs, {4,2,8}),
+    {ok, BlockList} = leo_jerasure:encode(vandrs, {4,2,8}, Bin),
     {error, _} = leo_jerasure:decode(BlockList,[0,1,2], byte_size(Bin), vandrs, {4,2,8}),
 
     ?debugMsg(" * Invalid: cauchyrs {10,4,3}"),
-    {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), cauchyrs, {10,4,3}),
+    {error, _} = leo_jerasure:encode(cauchyrs, {10,4,3}, Bin),
 
     ?debugMsg(" * Invalid: cauchyrs {4,2,3} with 3 failures"),
-    {ok, BlockList2} = leo_jerasure:encode(Bin, byte_size(Bin), cauchyrs, {4,2,3}),
+    {ok, BlockList2} = leo_jerasure:encode(cauchyrs, {4,2,3}, Bin),
     {error, _} = leo_jerasure:decode(BlockList2,[0,1,2], byte_size(Bin), cauchyrs, {4,2,3}),
 
     ?debugMsg(" * Invalid: liberation {4,2,6}"),
-    {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), liberation, {4,2,6}),
+    {error, _} = leo_jerasure:encode(liberation, {4,2,6}, Bin),
 
     ?debugMsg(" * Invalid: liberation {4,2,3}"),
-    {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), liberation, {4,2,3}),
+    {error, _} = leo_jerasure:encode(liberation, {4,2,3}, Bin),
 
     ?debugMsg(" * Invalid: liberation {4,2,5} with 3 failures"),
-    {ok, BlockList3} = leo_jerasure:encode(Bin, byte_size(Bin), liberation, {4,2,5}),
+    {ok, BlockList3} = leo_jerasure:encode(liberation, {4,2,5}, Bin),
     {error, _} = leo_jerasure:decode(BlockList3,[0,1,2], byte_size(Bin), liberation, {4,2,5}),
 
     ?debugMsg(" * Invalid: Unknown {4,2,3}"),
-    {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), unkown, {4,2,3}),
+    {error, _} = leo_jerasure:encode(unkown, {4,2,3}, Bin),
 
     ?debugMsg(" * Invalid: liberation {troll}"),
-    {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), liberation, {troll}),
+    {error, _} = leo_jerasure:encode(liberation, {troll}, Bin),
 
     ?debugMsg(" * Invalid: {4,2,5}, liberation"),
-    {error, _} = leo_jerasure:encode(Bin, byte_size(Bin), {4,2,5}, liberation).
+    {error, _} = leo_jerasure:encode({4,2,5}, liberation, Bin).
 
 suite_test_() ->
     {timeout, 180, fun long_process/0}.
@@ -172,6 +173,11 @@ repair_test() ->
 long_process() ->
     ?debugMsg("===== Testing Encode + Decode ====="),
     Bin = crypto:rand_bytes(?TEST_SIZE),
+    %% @pending
+    %% correctness_test(Bin, vandrs,     {4,2,-1}, 1),
+    %% correctness_test(Bin, cauchyrs,   {4,2,-1}, 1),
+    %% correctness_test(Bin, liberation, {4,2,-1}, 1),
+
     correctness_test(Bin, vandrs, {4,2,8}, 1),
     correctness_test(Bin, vandrs, {4,2,8}, 2),
     correctness_test(Bin, vandrs, {10,4,8}, 4),
