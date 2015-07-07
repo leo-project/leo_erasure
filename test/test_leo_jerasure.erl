@@ -47,9 +47,9 @@ comb(_,[]) ->
 comb(N,[H|T]) ->
     [[H|L] || L <- comb(N-1,T)]++comb(N,T).
 
-repair_test(Bin, Coding, CodingParams, Erasure) ->
-    ?debugFmt(" * ~p ~p with ~p failures(all cases)", [Coding, CodingParams, Erasure]),
-    {ok, BlockList} = leo_jerasure:encode(Coding, CodingParams, Bin),
+repair_test(Bin, CodingClass, CodingParams, Erasure) ->
+    ?debugFmt(" * ~p ~p with ~p failures(all cases)", [CodingClass, CodingParams, Erasure]),
+    {ok, BlockList} = leo_jerasure:encode(CodingClass, CodingParams, Bin),
     {K, M, _W} = CodingParams,
     FullList = lists:seq(0, K + M - 1),
     ErasureCombs = comb(Erasure, FullList),
@@ -57,7 +57,7 @@ repair_test(Bin, Coding, CodingParams, Erasure) ->
                    AvailList = lists:subtract(FullList, RepairList),
                    AvailBlocks = filter_block(BlockList, AvailList),
                    LostBlocks = filter_block(BlockList, RepairList),
-                   {ok, LostBlocks} = leo_jerasure:repair(AvailBlocks, AvailList, RepairList, Coding, CodingParams)
+                   {ok, LostBlocks} = leo_jerasure:repair(AvailBlocks, AvailList, RepairList, CodingClass, CodingParams)
            end,
     _ = erlang:statistics(wall_clock),
     lists:foreach(Func, ErasureCombs),
@@ -65,15 +65,15 @@ repair_test(Bin, Coding, CodingParams, Erasure) ->
     ?debugFmt("   >> time: ~wms", [Time]),
     ok.
 
-decode_test(Bin, BlockList, Coding, CodingParams, Failures) ->
+decode_test(Bin, BlockList, CodingClass, CodingParams, Failures) ->
     {K, M, _W} = CodingParams,
     FullList = lists:seq(0, K + M - 1),
     FailureCombs = comb(K + M - Failures, FullList),
     Func = fun(AvailList) ->
                    AvailBlocks = filter_block(BlockList, AvailList),
-                   BlockIdList = lists:zip(AvailBlocks, AvailList),
+                   BlockIdList = lists:zip(AvailList, AvailBlocks),
                    ShuffleList = [X||{_,X} <- lists:sort([ {random:uniform(), N} || N <- BlockIdList])],
-                   {ok, OutBin} = leo_jerasure:decode(Coding, CodingParams, ShuffleList, byte_size(Bin)),
+                   {ok, OutBin} = leo_jerasure:decode(CodingClass, CodingParams, ShuffleList, byte_size(Bin)),
                    case OutBin of
                        Bin ->
                            ok;
@@ -91,12 +91,12 @@ decode_test(Bin, BlockList, Coding, CodingParams, Failures) ->
     ?debugFmt("   >> time: ~wms", [Time]),
     ok.
 
-correctness_test(Bin, Coding, CodingParams, Failures) ->
-    ?debugFmt(" * ~p ~p with ~p failures (all cases)", [Coding, CodingParams, Failures]),
-    {ok, BlockList} = leo_jerasure:encode(Coding, CodingParams, Bin),
+correctness_test(Bin, CodingClass, CodingParams, Failures) ->
     {K, M,_W} = CodingParams,
+    ?debugFmt(" * ~p, {k:~w, m:~w} with ~p failures (all cases)", [CodingClass, K, M, Failures]),
+    {ok, BlockList} = leo_jerasure:encode(CodingClass, CodingParams, Bin),
     ?assertEqual(K + M, erlang:length(BlockList)),
-    ok = decode_test(Bin, BlockList, Coding, CodingParams, Failures).
+    ok = decode_test(Bin, BlockList, CodingClass, CodingParams, Failures).
 
 bench_encode_test() ->
     ?debugMsg(" ===== Encoding Benchmark Test ====="),
@@ -112,14 +112,14 @@ parameters_test() ->
 
     ?debugMsg(" * Invalid: vandrs {4,2,8} with 3 failures"),
     {ok, BlockList} = leo_jerasure:encode(vandrs, {4,2,8}, Bin),
-    {error, _} = leo_jerasure:decode(vandrs, {4,2,8}, BlockList,[0,1,2], byte_size(Bin)),
+    {error, _} = leo_jerasure:decode(vandrs, {4,2,8}, BlockList, [0,1,2], byte_size(Bin)),
 
     ?debugMsg(" * Invalid: cauchyrs {10,4,3}"),
     {error, _} = leo_jerasure:encode(cauchyrs, {10,4,3}, Bin),
 
     ?debugMsg(" * Invalid: cauchyrs {4,2,3} with 3 failures"),
     {ok, BlockList2} = leo_jerasure:encode(cauchyrs, {4,2,3}, Bin),
-    {error, _} = leo_jerasure:decode(cauchyrs, {4,2,3}, BlockList2,[0,1,2], byte_size(Bin)),
+    {error, _} = leo_jerasure:decode(cauchyrs, {4,2,3}, BlockList2, [0,1,2], byte_size(Bin)),
 
     ?debugMsg(" * Invalid: liberation {4,2,6}"),
     {error, _} = leo_jerasure:encode(liberation, {4,2,6}, Bin),
@@ -129,7 +129,7 @@ parameters_test() ->
 
     ?debugMsg(" * Invalid: liberation {4,2,5} with 3 failures"),
     {ok, BlockList3} = leo_jerasure:encode(liberation, {4,2,5}, Bin),
-    {error, _} = leo_jerasure:decode(liberation, {4,2,5}, BlockList3,[0,1,2], byte_size(Bin)),
+    {error, _} = leo_jerasure:decode(liberation, {4,2,5}, BlockList3, [0,1,2], byte_size(Bin)),
 
     ?debugMsg(" * Invalid: Unknown {4,2,3}"),
     {error, _} = leo_jerasure:encode(unkown, {4,2,3}, Bin),
@@ -138,7 +138,23 @@ parameters_test() ->
     {error, _} = leo_jerasure:encode(liberation, {troll}, Bin),
 
     ?debugMsg(" * Invalid: {4,2,5}, liberation"),
-    {error, _} = leo_jerasure:encode({4,2,5}, liberation, Bin).
+    {error, _} = leo_jerasure:encode({4,2,5}, liberation, Bin),
+
+    ?debugMsg(" * Simple encoder"),
+    {ok, BlockL_1} = leo_jerasure:encode({10,4}, Bin),
+    {ok, BlockL_2} = leo_jerasure:encode({8, 3}, Bin),
+    {ok, BlockL_3} = leo_jerasure:encode({6, 2}, Bin),
+    ?assertEqual(14, length(BlockL_1)),
+    ?assertEqual(11, length(BlockL_2)),
+    ?assertEqual(8,  length(BlockL_3)),
+
+    {ok, Obj_1} = leo_jerasure:decode({10,4}, lists:zip(lists:seq(0, length(BlockL_1)-1), BlockL_1), byte_size(Bin)),
+    {ok, Obj_2} = leo_jerasure:decode({8,3},  lists:zip(lists:seq(0, length(BlockL_2)-1), BlockL_2), byte_size(Bin)),
+    {ok, Obj_3} = leo_jerasure:decode({6, 2}, lists:zip(lists:seq(0, length(BlockL_3)-1), BlockL_3), byte_size(Bin)),
+    ?assertEqual(Bin, Obj_1),
+    ?assertEqual(Bin, Obj_2),
+    ?assertEqual(Bin, Obj_3),
+    ok.
 
 suite_test_() ->
     {timeout, 180, fun long_process/0}.
@@ -173,15 +189,32 @@ repair_test() ->
 long_process() ->
     ?debugMsg("===== Testing Encode + Decode ====="),
     Bin = crypto:rand_bytes(?TEST_SIZE),
-    correctness_test(Bin, vandrs, {10, 4,-1}, 4),
+    correctness_test(Bin, vandrs, {10, 4,-1}, 1),
     correctness_test(Bin, cauchyrs, {4, 2,-1}, 1),
     correctness_test(Bin, liberation, {4, 2,-1}, 1),
 
+    correctness_test(Bin, vandrs, {10, 4, 0}, 1),
+    correctness_test(Bin, cauchyrs, {4, 2, 0}, 1),
+    correctness_test(Bin, liberation, {4, 2, 0}, 1),
+
+    correctness_test(Bin, vandrs, {4,2,8}, 0),
     correctness_test(Bin, vandrs, {4,2,8}, 1),
     correctness_test(Bin, vandrs, {4,2,8}, 2),
+    correctness_test(Bin, vandrs, {8,3,8}, 0),
+    correctness_test(Bin, vandrs, {8,3,8}, 1),
+    correctness_test(Bin, vandrs, {8,3,8}, 2),
+    correctness_test(Bin, vandrs, {8,3,8}, 3),
+    correctness_test(Bin, vandrs, {10,4,8}, 0),
+    correctness_test(Bin, vandrs, {10,4,8}, 1),
+    correctness_test(Bin, vandrs, {10,4,8}, 2),
+    correctness_test(Bin, vandrs, {10,4,8}, 3),
     correctness_test(Bin, vandrs, {10,4,8}, 4),
+
+    correctness_test(Bin, cauchyrs, {4,2,3}, 0),
     correctness_test(Bin, cauchyrs, {4,2,3}, 1),
     correctness_test(Bin, cauchyrs, {4,2,3}, 2),
+
+    correctness_test(Bin, liberation, {4,2,7}, 0),
     correctness_test(Bin, liberation, {4,2,7}, 1),
     correctness_test(Bin, liberation, {4,2,7}, 2).
 
@@ -196,27 +229,27 @@ repeat_encode(Bin, BinSize, CodingClass, CodingParams, Cnt)->
     repeat_encode(Bin, BinSize, CodingClass, CodingParams, Cnt - 1).
 
 %% @doc Benchmark Encoding Speed
--spec(benchmark_encode(TotalSizeM, ChunkSizeM, Coding, Params) ->
+-spec(benchmark_encode(TotalSizeM, ChunkSizeM, CodingClass, Params) ->
              {ok, atom()} when TotalSizeM::integer(),
                                ChunkSizeM::integer(),
-                               Coding::atom(),
+                               CodingClass::atom(),
                                Params::{integer(), integer(), integer()}).
-benchmark_encode(TotalSizeM, ChunkSizeM, Coding, Params) ->
+benchmark_encode(TotalSizeM, ChunkSizeM, CodingClass, Params) ->
     KBytes = 1024 * 1024,
     TotalSize = TotalSizeM * KBytes,
     ChunkSize = ChunkSizeM * KBytes,
     ChunkSizeBits = ChunkSize * 8,
     Bin = << 0:ChunkSizeBits>>,
     Start = os:timestamp(),
-    repeat_encode(Bin, ChunkSize, Coding, Params, (TotalSize div ChunkSize)),
+    repeat_encode(Bin, ChunkSize, CodingClass, Params, (TotalSize div ChunkSize)),
     End = os:timestamp(),
     Time = timer:now_diff(End, Start),
     {ok, Time}.
 
-bench_encode(Coding, CodingParams) ->
-    {ok, Time} = benchmark_encode(100, 100, Coding, CodingParams),
+bench_encode(CodingClass, CodingParams) ->
+    {ok, Time} = benchmark_encode(100, 100, CodingClass, CodingParams),
     Rate = 100 / Time * 1000 * 1000,
-    ?debugFmt(" * ~p, ~p", [Coding, CodingParams]),
+    ?debugFmt(" * ~p, ~p", [CodingClass, CodingParams]),
     ?debugFmt("   >> Encoding Rate: ~p MB/s", [erlang:round(Rate * 100) / 100]),
     ok.
 

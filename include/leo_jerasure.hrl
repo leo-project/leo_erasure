@@ -31,6 +31,7 @@
 -define(DEF_CODING_PARAMS, {10, 4, 8}).
 
 -type(coding_params() :: {pos_integer(), pos_integer(), pos_integer()}).
+-type(id_with_block() :: {non_neg_integer(), binary()}).
 
 -define(DEF_CODING_VANDRS_K,    10).
 -define(DEF_CODING_CAUCHYRS_K,   4).

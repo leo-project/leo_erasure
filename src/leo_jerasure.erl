@@ -23,8 +23,8 @@
 
 -export([encode_file/1, encode_file/3,
          decode_file/2, decode_file/4, write_blocks/3]).
--export([encode/3, encode/4,
-         decode/4, decode/5,
+-export([encode/2, encode/3, encode/4,
+         decode/3, decode/4, decode/5,
          repair/4, repair/5]).
 
 -on_load(init/0).
@@ -108,24 +108,24 @@ encode_file(Coding, CodingParams, FileName) ->
 
 
 %% @doc Read Blocks from Disk, Decode the File and Write with .dec Extension
--spec(decode_file(FileName, FileSize) ->
+-spec(decode_file(FileName, ObjSize) ->
              ok | {error, Reason} when FileName::file:filename(),
-                                       FileSize::non_neg_integer(),
+                                       ObjSize::non_neg_integer(),
                                        Reason::any()).
-decode_file(FileName, FileSize) ->
-    decode_file(?DEF_CODING_CLASS, ?DEF_CODING_PARAMS, FileName, FileSize).
+decode_file(FileName, ObjSize) ->
+    decode_file(?DEF_CODING_CLASS, ?DEF_CODING_PARAMS, FileName, ObjSize).
 
--spec(decode_file(CodingClass, CodingParams, FileName, FileSize) ->
+-spec(decode_file(CodingClass, CodingParams, FileName, ObjSize) ->
              ok | {error, Reason} when CodingClass::coding_class(),
                                        CodingParams::coding_params(),
                                        FileName::file:filename(),
-                                       FileSize::non_neg_integer(),
+                                       ObjSize::non_neg_integer(),
                                        Reason::any()).
-decode_file(CodingClass, CodingParams, FileName, FileSize) ->
+decode_file(CodingClass, CodingParams, FileName, ObjSize) ->
     AvailList = check_available_blocks(FileName, 14, []),
-    BlockWithIdList = read_blocks(FileName, AvailList),
+    IdWithBlockL = read_blocks(FileName, AvailList),
 
-    case decode(CodingClass, CodingParams, BlockWithIdList, FileSize) of
+    case decode(CodingClass, CodingParams, IdWithBlockL, ObjSize) of
         {ok, Bin} ->
             file:write_file(FileName ++ ".dec", Bin);
         {error, Reason} ->
@@ -134,14 +134,26 @@ decode_file(CodingClass, CodingParams, FileName, FileSize) ->
 
 
 %% @doc Actual Encoding with Jerasure (NIF)
+encode({CodingParam_K, CodingParam_M}, Bin) ->
+    CodingClass = ?DEF_CODING_CLASS,
+    CodingParams = {CodingParam_K, CodingParam_M, ?coding_params_w(CodingClass)},
+    encode(CodingClass, CodingParams, Bin).
+
 -spec(encode(CodingClass, CodingParams, Bin) ->
-             {ok, Blocks} | {error, any()} when CodingClass::coding_class(),
+             {ok, IdWithBlockL} | {error, any()} when CodingClass::coding_class(),
                                                 CodingParams::coding_params(),
                                                 Bin::binary(),
-                                                Blocks::[binary()]).
-encode(CodingClass, {Coding_K, Coding_M, Coding_W}, Bin) when Coding_W < 1 ->
-    encode(CodingClass, {Coding_K, Coding_M, ?coding_params_w(CodingClass)}, Bin);
+                                                IdWithBlockL::[id_with_block()]).
+encode(CodingClass, {CodingParam_K, CodingParam_M, Coding_W}, Bin) when Coding_W < 1 ->
+    encode(CodingClass, {CodingParam_K, CodingParam_M, ?coding_params_w(CodingClass)}, Bin);
 encode(CodingClass, CodingParams, Bin) ->
+    %% @pending:
+    %% case encode(CodingClass, CodingParams, Bin, byte_size(Bin)) of
+    %%     {ok, BlockL} ->
+    %%         {ok, lists:zip(lists:seq(0, length(BlockL_1)-1))};
+    %%     Error ->
+    %%         Error
+    %% end.
     encode(CodingClass, CodingParams, Bin, byte_size(Bin)).
 
 -spec(encode(CodingClass, CodingParams, Bin, TotalSize) ->
@@ -155,28 +167,39 @@ encode(_CodingClass,_CodingParams,_Bin,_TotalSize) ->
 
 
 %% @doc Actual Decoding with Jerasure (NIF)
--spec(decode(CodingClass, CodingParams, BlockL, IdList, FileSize) ->
+-spec(decode({CodingParam_K, CodingParam_M}, IdWithBlockL, ObjSize) ->
+             {ok, Bin} | {error, any()} when CodingParam_K::pos_integer(),
+                                             CodingParam_M::pos_integer(),
+                                             IdWithBlockL::[id_with_block()],
+                                             ObjSize::integer(),
+                                             Bin::binary()).
+decode({CodingParam_K, CodingParam_M}, IdWithBlockL, ObjSize) ->
+    CodingClass = ?DEF_CODING_CLASS,
+    CodingParams = {CodingParam_K, CodingParam_M, ?coding_params_w(CodingClass)},
+    decode(CodingClass, CodingParams, IdWithBlockL, ObjSize).
+
+-spec(decode(CodingClass, CodingParams, BlockL, IdList, ObjSize) ->
              {ok, Bin} | {error, any()} when CodingClass::coding_class(),
                                              CodingParams::coding_params(),
                                              BlockL::[binary()],
                                              IdList::[integer()],
-                                             FileSize::integer(),
+                                             ObjSize::integer(),
                                              Bin::binary()).
-decode(_CodingClass,_CodingParams,_BlockL,_IdList,_FileSize) ->
+decode(_CodingClass,_CodingParams,_BlockL,_IdList,_ObjSize) ->
     exit(nif_library_not_loaded).
 
--spec(decode(CodingClass, CodingParams, BlockWithIdList, FileSize) ->
+-spec(decode(CodingClass, CodingParams, IdWithBlockL, ObjSize) ->
              {ok, Bin} | {error, any()} when CodingClass::coding_class(),
                                              CodingParams::coding_params(),
-                                             BlockWithIdList::[{binary(), integer()}],
-                                             FileSize::integer(),
+                                             IdWithBlockL::[id_with_block()],
+                                             ObjSize::integer(),
                                              Bin::binary()).
-decode(CodingClass, {Coding_K, Coding_M, Coding_W}, BlockWithIdList, FileSize) when Coding_W < 1 ->
-    decode(CodingClass,{Coding_K, Coding_M, ?coding_params_w(CodingClass)},
-           BlockWithIdList, FileSize);
-decode(CodingClass, CodingParams, BlockWithIdList, FileSize) ->
-    {BlockL, IdList} = lists:unzip(BlockWithIdList),
-    decode(CodingClass, CodingParams, BlockL, IdList, FileSize).
+decode(CodingClass, {CodingParam_K, CodingParam_M, Coding_W}, IdWithBlockL, ObjSize) when Coding_W < 1 ->
+    decode(CodingClass,{CodingParam_K, CodingParam_M, ?coding_params_w(CodingClass)},
+           IdWithBlockL, ObjSize);
+decode(CodingClass, CodingParams, IdWithBlockL, ObjSize) ->
+    {IdList, BlockL} = lists:unzip(IdWithBlockL),
+    decode(CodingClass, CodingParams, BlockL, IdList, ObjSize).
 
 
 %% @doc Repair Multiple Blocks with Jerasure (NIF)
@@ -190,15 +213,15 @@ decode(CodingClass, CodingParams, BlockWithIdList, FileSize) ->
 repair(_BlockL,_IdList,_RepairIdList,_CodingClass,_CodingParams) ->
     exit(nif_library_not_loaded).
 
--spec(repair(BlockWithIdList, RepairIdList, CodingClass, CodingParams) ->
-             {ok, BlockL} | {error, any()} when BlockWithIdList::[{binary(), integer()}],
+-spec(repair(IdWithBlockL, RepairIdList, CodingClass, CodingParams) ->
+             {ok, BlockL} | {error, any()} when IdWithBlockL::[id_with_block()],
                                                 RepairIdList ::[integer()],
                                                 CodingClass::coding_class(),
                                                 CodingParams::coding_params(),
                                                 BlockL::[binary()]).
-repair(BlockWithIdList, RepairIdList, CodingClass, CodingParams) ->
+repair(IdWithBlockL, RepairIdList, CodingClass, CodingParams) ->
     %% Repair Multiple Blocks with Jerasure (NIF) [{Bin, Id}] Interface
-    {BlockL, IdList} = lists:unzip(BlockWithIdList),
+    {BlockL, IdList} = lists:unzip(IdWithBlockL),
     repair(BlockL, IdList, RepairIdList, CodingClass, CodingParams).
 
 
@@ -229,4 +252,4 @@ read_blocks(FileName, [Cnt | T], BlockL) ->
     BlockName = FileName ++ "." ++ integer_to_list(Cnt),
     BlockPath = filename:join(?BLOCKSTOR, BlockName),
     {ok, Block} = file:read_file(BlockPath),
-    read_blocks(FileName, T, [{Block, Cnt} | BlockL]).
+    read_blocks(FileName, T, [{Cnt, Block} | BlockL]).
