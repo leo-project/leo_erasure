@@ -57,7 +57,8 @@ repair_test(Bin, CodingClass, CodingParams, Erasure) ->
                    AvailList = lists:subtract(FullList, RepairList),
                    AvailBlocks = filter_block(BlockList, AvailList),
                    LostBlocks = filter_block(BlockList, RepairList),
-                   {ok, LostBlocks} = leo_jerasure:repair(AvailBlocks, AvailList, RepairList, CodingClass, CodingParams)
+                   {ok, LostBlocks} = leo_jerasure:repair(
+                                        CodingClass, CodingParams, AvailBlocks, AvailList, RepairList)
            end,
     _ = erlang:statistics(wall_clock),
     lists:foreach(Func, ErasureCombs),
@@ -255,7 +256,5 @@ bench_encode(CodingClass, CodingParams) ->
     ?debugFmt(" * ~p, ~p", [CodingClass, CodingParams]),
     ?debugFmt("   >> Encoding Rate: ~p MB/s", [erlang:round(Rate * 100) / 100]),
     ok.
-
-
 
 -endif.

@@ -64,7 +64,7 @@ new(_Id) ->
 
     BinSizeBits = BinSize * 8,
     Bin = << 0:BinSizeBits >>,
-    {ok, BlockList} = leo_jerasure:encode(Bin, BinSize, Coding, CodingParams),
+    {ok, BlockList} = leo_jerasure:encode(Coding, CodingParams, Bin, BinSize),
     N = length(BlockList),
     IdList = lists:seq(0, N - 1),
     BlockWithIdList = lists:zip(BlockList, IdList),
@@ -72,7 +72,7 @@ new(_Id) ->
     {K, M, _} = CodingParams,
     FullList = lists:seq(0, K + M - 1),
     DecodeCombs = comb(K, FullList),
-    DecodeCombSize = length(DecodeCombs), 
+    DecodeCombSize = length(DecodeCombs),
 
     ?debugFmt('Prepared Blocks for ~p ~p [~p Bytes]', [Coding, CodingParams, BinSize]),
     {ok, #state {coding = Coding,
@@ -87,28 +87,28 @@ new(_Id) ->
 run(encode, KeyGen, ValGen, #state{ coding = Coding, coding_params = CodingParams } = State) ->
     _Key = KeyGen(),
     Val = ValGen(),
-    case leo_jerasure:encode(Val, byte_size(Val), Coding, CodingParams) of
+    case leo_jerasure:encode(Coding, CodingParams, Val, byte_size(Val)) of
         {error, Cause} ->
             {error, Cause, State};
         _ ->
             {ok, State}
     end;
 
-run(decode, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParams, 
-                                   bin_size = BinSize, block_id_list = BlockWithIdList,
-                                   decode_comb = DecodeCombs, decode_comb_size = DecodeCombSize } = State) ->
+run(decode, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParams,
+                                    bin_size = BinSize, block_id_list = BlockWithIdList,
+                                    decode_comb = DecodeCombs, decode_comb_size = DecodeCombSize } = State) ->
     Key = KeyGen(),
     AvailList = lists:nth(Key rem DecodeCombSize + 1, DecodeCombs),
     Selected = filter_block(BlockWithIdList, AvailList),
-    case leo_jerasure:decode(Selected, BinSize, Coding, CodingParams) of
+    case leo_jerasure:decode(Coding, CodingParams, Selected, BinSize) of
         {error, Cause} ->
             {error, Cause, State};
         _ ->
             {ok, State}
     end;
 
-run(repair, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParams, 
-                                   block_id_list = BlockWithIdList, erasure = Erasure } = State) ->
+run(repair, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParams,
+                                    block_id_list = BlockWithIdList, erasure = Erasure } = State) ->
     Key = KeyGen(),
     {K, M, _} = CodingParams,
     FullList = lists:seq(0, K + M - 1),
@@ -116,9 +116,9 @@ run(repair, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParam
     RemainList = lists:subtract(FullList, RepairList),
     AvailList = lists:sublist(RemainList, 1, K),
     Selected = filter_block(BlockWithIdList, AvailList),
-    case leo_jerasure:repair(Selected, RepairList, Coding, CodingParams) of
-        {error, Cause} ->
-            {error, Cause, State};
+    case leo_jerasure:repair(Coding, CodingParams, Selected, RepairList) of
         {ok, _Blocks} ->
-            {ok, State}
+            {ok, State};
+        {error, Cause} ->
+            {error, Cause, State}
     end.

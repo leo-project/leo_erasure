@@ -207,25 +207,25 @@ decode(CodingClass, CodingParams, IdWithBlockL, ObjSize) ->
 
 %% @doc Repair Multiple Blocks with Jerasure (NIF)
 %%
--spec(repair(BlockL, IdList, RepairIdList, CodingClass, CodingParams) ->
-             {ok, BlockL} | {error, any()} when BlockL::[binary()],
-                                                IdList::[integer()],
-                                                RepairIdList ::[integer()],
-                                                CodingClass::coding_class(),
-                                                CodingParams::coding_params()).
-repair(_BlockL,_IdList,_RepairIdList,_CodingClass,_CodingParams) ->
+-spec(repair(CodingClass, CodingParams, BlockL, IdList, RepairIdList) ->
+             {ok, BlockL} | {error, any()} when CodingClass::coding_class(),
+                                                CodingParams::coding_params(),
+                                                BlockL::[binary()],
+                                                IdList::[non_neg_integer()],
+                                                RepairIdList ::[non_neg_integer()]).
+repair(_CodingClass,_CodingParams,_BlockL,_IdList,_RepairIdList) ->
     exit(nif_library_not_loaded).
 
--spec(repair(IdWithBlockL, RepairIdList, CodingClass, CodingParams) ->
-             {ok, BlockL} | {error, any()} when IdWithBlockL::[id_with_block()],
-                                                RepairIdList ::[integer()],
-                                                CodingClass::coding_class(),
+-spec(repair(CodingClass, CodingParams, IdWithBlockL, RepairIdList) ->
+             {ok, BlockL} | {error, any()} when CodingClass::coding_class(),
                                                 CodingParams::coding_params(),
-                                                BlockL::[binary()]).
-repair(IdWithBlockL, RepairIdList, CodingClass, CodingParams) ->
+                                                BlockL::[binary()],
+                                                IdWithBlockL::[id_with_block()],
+                                                RepairIdList ::[non_neg_integer()]).
+repair(CodingClass, CodingParams, IdWithBlockL, RepairIdList) ->
     %% Repair Multiple Blocks with Jerasure (NIF) [{Bin, Id}] Interface
-    {BlockL, IdList} = lists:unzip(IdWithBlockL),
-    repair(BlockL, IdList, RepairIdList, CodingClass, CodingParams).
+    {IdList, BlockL} = lists:unzip(IdWithBlockL),
+    repair(CodingClass, CodingParams, BlockL, IdList, RepairIdList).
 
 
 %%--------------------------------------------------------------------
