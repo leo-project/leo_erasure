@@ -109,8 +109,6 @@ encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
 }
 
 
-// argv[0] -> argv[2]
-// argv[1] -> argv[3]
 static ERL_NIF_TERM
 decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     unsigned int listLen;
@@ -193,15 +191,16 @@ decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     return enif_make_tuple2(env, ok, bin);
 }
 
+
 static ERL_NIF_TERM
 repair(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
 
     unsigned int listLen;
     unsigned int listLen2;
-    if (!enif_get_list_length(env, argv[0], &listLen)) {
+    if (!enif_get_list_length(env, argv[2], &listLen)) {
         return errTuple(env,"Block List Needed");
     }
-    if (!enif_get_list_length(env, argv[1], &listLen2)) {
+    if (!enif_get_list_length(env, argv[3], &listLen2)) {
         return errTuple(env,"ID List Needed");
     }
     if (listLen != listLen2) {
@@ -218,8 +217,8 @@ repair(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     ERL_NIF_TERM H;
     ERL_NIF_TERM T;
 
-    BT = argv[0];
-    T = argv[1];
+    BT = argv[2];
+    T = argv[3];
     for(unsigned int i = 0; i < listLen; ++i) {
         enif_get_list_cell(env, BT, &BH, &BT);
         enif_get_list_cell(env, T, &H, &T);
@@ -238,14 +237,14 @@ repair(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     }
 
     unsigned int listLen3;
-    if (!enif_get_list_length(env, argv[2], &listLen3)) {
+    if (!enif_get_list_length(env, argv[4], &listLen3)) {
         return errTuple(env,"Repair ID List Needed");
     }
     vector<int> repairList;
     repairList.resize(listLen3);
     ERL_NIF_TERM RH;
     ERL_NIF_TERM RT;
-    RT = argv[2];
+    RT = argv[4];
     for(unsigned int i = 0; i < listLen3; ++i) {
         enif_get_list_cell(env, RT, &RH, &RT);
         int repairId;
@@ -256,13 +255,13 @@ repair(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     }
 
     char atomString[64];
-    if(!enif_get_atom(env, argv[3], atomString, 64, ERL_NIF_LATIN1)) {
+    if(!enif_get_atom(env, argv[0], atomString, 64, ERL_NIF_LATIN1)) {
         return errTuple(env,"Expect coding");
     }
 
     const ERL_NIF_TERM* tuple;
     int cnt;
-    if(!enif_get_tuple(env, argv[4], &cnt, &tuple)) {
+    if(!enif_get_tuple(env, argv[1], &cnt, &tuple)) {
         return errTuple(env,"Expect tuple for coding parameters");
     }
     int k,m,w;
