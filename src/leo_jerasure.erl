@@ -90,8 +90,8 @@ encode_file(FileName) ->
                                         Reason::any()).
 encode_file(Coding, CodingParams, FileName) ->
     case file:read_file(FileName) of
-        {ok, FileContent} ->
-            case encode(Coding, CodingParams, FileContent) of
+        {ok, Bin} ->
+            case encode(Coding, CodingParams, Bin, byte_size(Bin)) of
                 {ok, Blocks} ->
                     case filelib:ensure_dir(?BLOCKSTOR) of
                         ok ->
@@ -134,6 +134,11 @@ decode_file(CodingClass, CodingParams, FileName, ObjSize) ->
 
 
 %% @doc Actual Encoding with Jerasure (NIF)
+-spec(encode({CodingParam_K, CodingParam_M}, Bin) ->
+             {ok, IdWithBlockL} | {error, any()} when CodingParam_K::pos_integer(),
+                                                      CodingParam_M::pos_integer(),
+                                                      Bin::binary(),
+                                                      IdWithBlockL::[id_with_block()]).
 encode({CodingParam_K, CodingParam_M}, Bin) ->
     CodingClass = ?DEF_CODING_CLASS,
     CodingParams = {CodingParam_K, CodingParam_M, ?coding_params_w(CodingClass)},
@@ -141,20 +146,18 @@ encode({CodingParam_K, CodingParam_M}, Bin) ->
 
 -spec(encode(CodingClass, CodingParams, Bin) ->
              {ok, IdWithBlockL} | {error, any()} when CodingClass::coding_class(),
-                                                CodingParams::coding_params(),
-                                                Bin::binary(),
-                                                IdWithBlockL::[id_with_block()]).
+                                                      CodingParams::coding_params(),
+                                                      Bin::binary(),
+                                                      IdWithBlockL::[id_with_block()]).
 encode(CodingClass, {CodingParam_K, CodingParam_M, Coding_W}, Bin) when Coding_W < 1 ->
     encode(CodingClass, {CodingParam_K, CodingParam_M, ?coding_params_w(CodingClass)}, Bin);
 encode(CodingClass, CodingParams, Bin) ->
-    %% @pending:
-    %% case encode(CodingClass, CodingParams, Bin, byte_size(Bin)) of
-    %%     {ok, BlockL} ->
-    %%         {ok, lists:zip(lists:seq(0, length(BlockL_1)-1))};
-    %%     Error ->
-    %%         Error
-    %% end.
-    encode(CodingClass, CodingParams, Bin, byte_size(Bin)).
+    case encode(CodingClass, CodingParams, Bin, byte_size(Bin)) of
+        {ok, BlockL} ->
+            {ok, lists:zip(lists:seq(0, length(BlockL)-1), BlockL)};
+        Error ->
+            Error
+    end.
 
 -spec(encode(CodingClass, CodingParams, Bin, TotalSize) ->
              {ok, Blocks} | {error, any()} when CodingClass::coding_class(),
