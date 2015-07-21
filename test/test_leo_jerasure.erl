@@ -27,25 +27,85 @@
 -ifdef(EUNIT).
 -define(TEST_SIZE, 10485760 + 1).
 
+%% ---------------------------------------------------------
+%% TEST-1
+%% ---------------------------------------------------------
+suite_test_() ->
+    {timeout, 180, fun long_process/0}.
 
-filter_block(_BlockList, _Cnt, [], Acc) ->
-    Acc;
-filter_block([HB | TB], Cnt, [HF | TF] = FilterList, Acc) ->
-    case Cnt of
-        HF ->
-            filter_block(TB, Cnt + 1, TF, Acc ++ [HB]);
-        _ ->
-            filter_block(TB, Cnt + 1, FilterList, Acc)
-    end.
-filter_block(BlockList, FilterList) ->
-    filter_block(BlockList, 0, FilterList, []).
+%% @private
+long_process() ->
+    ?debugMsg("===== Testing Encode + Decode ====="),
+    Bin = crypto:rand_bytes(?TEST_SIZE),
+    check_correctness(Bin, vandrs, {10, 4,-1}, 1),
+    check_correctness(Bin, cauchyrs, {4, 2,-1}, 1),
+    check_correctness(Bin, liberation, {4, 2,-1}, 1),
 
-comb(0,_) ->
-    [[]];
-comb(_,[]) ->
-    [];
-comb(N,[H|T]) ->
-    [[H|L] || L <- comb(N-1,T)]++comb(N,T).
+    check_correctness(Bin, vandrs, {10, 4, 0}, 1),
+    check_correctness(Bin, cauchyrs, {4, 2, 0}, 1),
+    check_correctness(Bin, liberation, {4, 2, 0}, 1),
+
+    check_correctness(Bin, vandrs, {4,2,8}, 0),
+    check_correctness(Bin, vandrs, {4,2,8}, 1),
+    check_correctness(Bin, vandrs, {4,2,8}, 2),
+    check_correctness(Bin, vandrs, {8,3,8}, 0),
+    check_correctness(Bin, vandrs, {8,3,8}, 1),
+    check_correctness(Bin, vandrs, {8,3,8}, 2),
+    check_correctness(Bin, vandrs, {8,3,8}, 3),
+    check_correctness(Bin, vandrs, {10,4,8}, 0),
+    check_correctness(Bin, vandrs, {10,4,8}, 1),
+    check_correctness(Bin, vandrs, {10,4,8}, 2),
+    check_correctness(Bin, vandrs, {10,4,8}, 3),
+    check_correctness(Bin, vandrs, {10,4,8}, 4),
+
+    check_correctness(Bin, cauchyrs, {4,2,3}, 0),
+    check_correctness(Bin, cauchyrs, {4,2,3}, 1),
+    check_correctness(Bin, cauchyrs, {4,2,3}, 2),
+
+    check_correctness(Bin, liberation, {4,2,7}, 0),
+    check_correctness(Bin, liberation, {4,2,7}, 1),
+    check_correctness(Bin, liberation, {4,2,7}, 2),
+    ok.
+
+%% @private
+check_correctness(Bin, CodingClass, CodingParams, Failures) ->
+    {K, M,_W} = CodingParams,
+    ?debugFmt(" * ~p, {k:~w, m:~w} with ~p failures (all cases)", [CodingClass, K, M, Failures]),
+    {ok, IdWithBlockL} = leo_jerasure:encode(CodingClass, CodingParams, Bin),
+    ?assertEqual(K + M, erlang:length(IdWithBlockL)),
+    ok = decode_test(Bin, IdWithBlockL, CodingClass, CodingParams, Failures),
+    ok.
+
+
+%% ---------------------------------------------------------
+%% TEST-2
+%% ---------------------------------------------------------
+file_test() ->
+    ?debugMsg("===== Testing encode_file + decode_file ====="),
+    Bin = crypto:rand_bytes(?TEST_SIZE),
+    ?debugFmt(" * vandrs {10,4,8} ~p bytes", [?TEST_SIZE]),
+    file:write_file("testbin", Bin),
+    leo_jerasure:encode_file(vandrs, {10,4,8}, "testbin"),
+    ?debugMsg(" * Erasure Block 0,2,4,6"),
+    file:delete("blocks/testbin.0"),
+    file:delete("blocks/testbin.2"),
+    file:delete("blocks/testbin.4"),
+    file:delete("blocks/testbin.6"),
+    leo_jerasure:decode_file(vandrs, {10,4,8}, "testbin", ?TEST_SIZE),
+    {ok, DecBin} = file:read_file("testbin.dec"),
+    ?assertEqual(Bin, DecBin),
+    ?debugMsg(" * Correct, Cleanup"),
+    BlockPathList = filelib:wildcard("blocks/testbin.*"),
+    lists:foreach(fun file:delete/1, BlockPathList),
+    file:delete("testbin"),
+    file:delete("testbin.dec").
+
+repair_test() ->
+    ?debugMsg("===== Block Repair ====="),
+    Bin = crypto:rand_bytes(?TEST_SIZE),
+    repair_test(Bin, vandrs, {10,4,8}, 2),
+    repair_test(Bin, cauchyrs, {4,2,3}, 2),
+    repair_test(Bin, liberation, {4,2,7}, 2).
 
 repair_test(Bin, CodingClass, CodingParams, Erasure) ->
     ?debugFmt(" * ~p ~p with ~p failures(all cases)", [CodingClass, CodingParams, Erasure]),
@@ -92,12 +152,41 @@ decode_test(Bin, BlockList, CodingClass, CodingParams, Failures) ->
     ?debugFmt("   >> time: ~wms", [Time]),
     ok.
 
-correctness_test(Bin, CodingClass, CodingParams, Failures) ->
-    {K, M,_W} = CodingParams,
-    ?debugFmt(" * ~p, {k:~w, m:~w} with ~p failures (all cases)", [CodingClass, K, M, Failures]),
-    {ok, IdWithBlockL} = leo_jerasure:encode(CodingClass, CodingParams, Bin),
-    ?assertEqual(K + M, erlang:length(IdWithBlockL)),
-    ok = decode_test(Bin, IdWithBlockL, CodingClass, CodingParams, Failures).
+correctness_test() ->
+    ?debugMsg(" ===== Check correctness encoding, decoding and repairing ====="),
+    Len = 1024 * 1024 * 5,
+    ok = correctness_test_1(10, 4, Len),
+    ok = correctness_test_1(8,  3, Len),
+    ok = correctness_test_1(6,  2, Len),
+    ok = correctness_test_1(4,  2, Len),
+    ok = correctness_test_1(4,  1, Len),
+    ok.
+
+correctness_test_1(CodingParamK, CodingParamM, Len) ->
+    %% preparing
+    true = erlang:garbage_collect(self()),
+    ?debugFmt(" * vandrs:{k:~w, m:~w}", [CodingParamK, CodingParamM]),
+    Bin = crypto:rand_bytes(Len),
+
+    %% encoding
+    {ok, IdWithBlockL} = leo_jerasure:encode({CodingParamK, CodingParamM}, Bin),
+    ?assertEqual(CodingParamK + CodingParamM, erlang:length(IdWithBlockL)),
+    [?debugVal({Id, byte_size(Block)}) || {Id, Block} <- IdWithBlockL],
+
+    %% decoding
+    {ok, Bin_1} = leo_jerasure:decode({CodingParamK, CodingParamM}, IdWithBlockL, Len),
+    ?assertEqual(Len, byte_size(Bin_1)),
+
+    %% repairing
+    RepairedId = erlang:phash2(crypto:rand_bytes(128), (CodingParamK + CodingParamM)) + 1,
+    IdWithBlockL_1 = lists:delete(
+                       lists:nth(RepairedId, IdWithBlockL), IdWithBlockL),
+    {ok, RepairedIdWithBlockL} = leo_jerasure:repair({CodingParamK, CodingParamM}, IdWithBlockL_1),
+    ?assertEqual(1, length(RepairedIdWithBlockL)),
+    ?assertEqual((RepairedId - 1), element(1, hd(RepairedIdWithBlockL))),
+    ?assertEqual(lists:nth(RepairedId, IdWithBlockL), hd(RepairedIdWithBlockL)),
+    ok.
+
 
 bench_encode_test() ->
     ?debugMsg(" ===== Encoding Benchmark Test ====="),
@@ -160,67 +249,31 @@ parameters_test() ->
     ?assertEqual(Bin, Obj_6),
     ok.
 
-suite_test_() ->
-    {timeout, 180, fun long_process/0}.
 
-file_test() ->
-    ?debugMsg("===== Testing encode_file + decode_file ====="),
-    Bin = crypto:rand_bytes(?TEST_SIZE),
-    ?debugFmt(" * vandrs {10,4,8} ~p bytes", [?TEST_SIZE]),
-    file:write_file("testbin", Bin),
-    leo_jerasure:encode_file(vandrs, {10,4,8}, "testbin"),
-    ?debugMsg(" * Erasure Block 0,2,4,6"),
-    file:delete("blocks/testbin.0"),
-    file:delete("blocks/testbin.2"),
-    file:delete("blocks/testbin.4"),
-    file:delete("blocks/testbin.6"),
-    leo_jerasure:decode_file(vandrs, {10,4,8}, "testbin", ?TEST_SIZE),
-    {ok, DecBin} = file:read_file("testbin.dec"),
-    ?assertEqual(Bin, DecBin),
-    ?debugMsg(" * Correct, Cleanup"),
-    BlockPathList = filelib:wildcard("blocks/testbin.*"),
-    lists:foreach(fun file:delete/1, BlockPathList),
-    file:delete("testbin"),
-    file:delete("testbin.dec").
+%% ---------------------------------------------------------
+%% Internal Functions
+%% ---------------------------------------------------------
+%% @private
+filter_block(_BlockList, _Cnt, [], Acc) ->
+    Acc;
+filter_block([HB | TB], Cnt, [HF | TF] = FilterList, Acc) ->
+    case Cnt of
+        HF ->
+            filter_block(TB, Cnt + 1, TF, Acc ++ [HB]);
+        _ ->
+            filter_block(TB, Cnt + 1, FilterList, Acc)
+    end.
+filter_block(BlockList, FilterList) ->
+    filter_block(BlockList, 0, FilterList, []).
 
-repair_test() ->
-    ?debugMsg("===== Block Repair ====="),
-    Bin = crypto:rand_bytes(?TEST_SIZE),
-    repair_test(Bin, vandrs, {10,4,8}, 2),
-    repair_test(Bin, cauchyrs, {4,2,3}, 2),
-    repair_test(Bin, liberation, {4,2,7}, 2).
 
-long_process() ->
-    ?debugMsg("===== Testing Encode + Decode ====="),
-    Bin = crypto:rand_bytes(?TEST_SIZE),
-    correctness_test(Bin, vandrs, {10, 4,-1}, 1),
-    correctness_test(Bin, cauchyrs, {4, 2,-1}, 1),
-    correctness_test(Bin, liberation, {4, 2,-1}, 1),
-
-    correctness_test(Bin, vandrs, {10, 4, 0}, 1),
-    correctness_test(Bin, cauchyrs, {4, 2, 0}, 1),
-    correctness_test(Bin, liberation, {4, 2, 0}, 1),
-
-    correctness_test(Bin, vandrs, {4,2,8}, 0),
-    correctness_test(Bin, vandrs, {4,2,8}, 1),
-    correctness_test(Bin, vandrs, {4,2,8}, 2),
-    correctness_test(Bin, vandrs, {8,3,8}, 0),
-    correctness_test(Bin, vandrs, {8,3,8}, 1),
-    correctness_test(Bin, vandrs, {8,3,8}, 2),
-    correctness_test(Bin, vandrs, {8,3,8}, 3),
-    correctness_test(Bin, vandrs, {10,4,8}, 0),
-    correctness_test(Bin, vandrs, {10,4,8}, 1),
-    correctness_test(Bin, vandrs, {10,4,8}, 2),
-    correctness_test(Bin, vandrs, {10,4,8}, 3),
-    correctness_test(Bin, vandrs, {10,4,8}, 4),
-
-    correctness_test(Bin, cauchyrs, {4,2,3}, 0),
-    correctness_test(Bin, cauchyrs, {4,2,3}, 1),
-    correctness_test(Bin, cauchyrs, {4,2,3}, 2),
-
-    correctness_test(Bin, liberation, {4,2,7}, 0),
-    correctness_test(Bin, liberation, {4,2,7}, 1),
-    correctness_test(Bin, liberation, {4,2,7}, 2).
+%% @private
+comb(0,_) ->
+    [[]];
+comb(_,[]) ->
+    [];
+comb(N,[H|T]) ->
+    [[H|L] || L <- comb(N-1,T)] ++ comb(N,T).
 
 
 %% @doc Repeat the Encoding Process
