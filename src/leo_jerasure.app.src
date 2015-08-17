@@ -23,7 +23,7 @@
 {application, leo_jerasure,
  [
   {description, "Jerasure Library Binding"},
-  {vsn, "0.4.0"},
+  {vsn, "0.4.2"},
   {modules, [leo_jerasure]},
   {registered, []},
   {applications, [

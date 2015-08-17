@@ -29,20 +29,36 @@ vector<ERL_NIF_TERM> LiberationCoding::doEncode(ERL_NIF_TERM dataBin) {
     size_t dataSize = data.size;
     size_t blockSize = roundTo((roundTo(dataSize, k*w) / (k*w)), 16) * w;
 
-    enif_realloc_binary(&data, blockSize * (k + m));
-
-    for(int i = 0; i < k + m; ++i) {
-        (i < k) ? dataBlocks[i] = (char*)data.data + i * blockSize:
-            codeBlocks[i - k] = (char*)data.data + i * blockSize;
+    size_t offset = 0;
+    size_t remain = dataSize;
+    int filled = 0;
+    while(remain >= blockSize) {
+        dataBlocks[filled] = (char*)data.data + offset;
+        offset += blockSize;
+        remain -= blockSize;
+        filled++;
+    }
+    ErlNifBinary tmp;
+    enif_alloc_binary((k + m - filled) * blockSize + 16, &tmp);
+    size_t align = (((size_t)data.data & 0x0f) - ((size_t)tmp.data & 0x0f) + 16) & 0x0f;
+    char* alignedHead = (char*)tmp.data + align;
+    memcpy(alignedHead, data.data + filled * blockSize, dataSize - filled * blockSize);
+    offset = 0;
+    for(int i = filled; i < k + m; ++i, offset += blockSize) {
+        (i < k) ? dataBlocks[i] = alignedHead + offset:
+            codeBlocks[i - k] = alignedHead + offset;
     }
 
     jerasure_schedule_encode(k, m, w, smart, dataBlocks, codeBlocks, blockSize, blockSize / w);
 
-    ERL_NIF_TERM allBlocksBin = enif_make_binary(env, &data);
-
     vector<ERL_NIF_TERM> blockList;
-    for(int i = 0 ; i < k + m; ++i) {
-        blockList.push_back(enif_make_sub_binary(env, allBlocksBin, i * blockSize, blockSize));
+    for(int i = 0; i < filled; ++i) {
+        blockList.push_back(enif_make_sub_binary(env, dataBin, i * blockSize, blockSize)); 
+    }
+    ERL_NIF_TERM tmpBin = enif_make_binary(env, &tmp);
+    offset = 0;
+    for(int i = filled; i < k + m; ++i, offset += blockSize) {
+        blockList.push_back(enif_make_sub_binary(env, tmpBin, offset + align, blockSize));
     }
 
     jerasure_free_schedule(smart);
