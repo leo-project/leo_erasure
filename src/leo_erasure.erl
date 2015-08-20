@@ -19,7 +19,7 @@
 %% under the License.
 %%
 %%======================================================================
--module(leo_jerasure).
+-module(leo_erasure).
 
 -export([encode_file/1, encode_file/3,
          decode_file/2, decode_file/4, write_blocks/3]).
@@ -31,7 +31,7 @@
 
 -define(BLOCKSTOR, "blocks/").
 
--include("leo_jerasure.hrl").
+-include("leo_erasure.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -ifdef(TEST).
 -endif.
@@ -48,12 +48,12 @@ init() ->
                  {error, bad_name} ->
                      case code:which(?MODULE) of
                          Filename when is_list(Filename) ->
-                             filename:join([filename:dirname(Filename),"../priv", "leo_jerasure"]);
+                             filename:join([filename:dirname(Filename),"../priv", "leo_erasure"]);
                          _ ->
-                             filename:join("../priv", "leo_jerasure")
+                             filename:join("../priv", "leo_erasure")
                      end;
                  Dir ->
-                     filename:join(Dir, "leo_jerasure")
+                     filename:join(Dir, "leo_erasure")
              end,
     erlang:load_nif(SoName, 0),
     filelib:ensure_dir(?BLOCKSTOR).

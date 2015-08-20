@@ -1,17 +1,15 @@
-# leo_jerasure
-
-[![Build Status](https://secure.travis-ci.org/leo-project/leo_jerasure.png?branch=develop)](http://travis-ci.org/leo-project/leo_jerasure)
+# leo_erasure
 
 ## Overview
 
-* "leo_jerasure" is a Erlang binding for the open sourced Erasure Coding library "Jerasure"
+* "leo_erasure" is a Erlang binding for the open sourced Erasure Coding library "Jerasure"
   * Coding Supported: Reed-Solomon Code (Vandermonde/Cauchy), Liberation Code
-* "leo_jerasure" uses [rebar](https://github.com/rebar/rebar) build system. Makefile so that simply running "make" at the top level should work.
+* "leo_erasure" uses [rebar](https://github.com/rebar/rebar) build system. Makefile so that simply running "make" at the top level should work.
 
 ## Description
 * Object would be encoded into `{k + m}` blocks, any `{k}` blocks could be used to decode back
 * **K**: The number of data chunks - The number of chunks in which the original object is divided
-* **M**: The number of coding chunks - The number of additional chunks computed by leo_jerasure's encoding functions
+* **M**: The number of coding chunks - The number of additional chunks computed by leo_erasure's encoding functions
 
 ### Dependencies
 * [Erlang 16/17](erlang.org)
@@ -20,7 +18,7 @@
 ### Installation
 #### For Ubuntu 14.04LTS	or higher
 ```bash
-$ sudo apt-get install git automake autoconf libtool build-essential
+$ sudo apt-get install git automake autoconf libtool build-essential yasm
 ```
 
 #### For RHEL/CentOS v6/7
@@ -28,7 +26,7 @@ $ sudo apt-get install git automake autoconf libtool build-essential
 ## ------------------------------
 ## For CentOS/RHEL 6.5/6.6 and 7
 ## ------------------------------
-## 1. You need to install ``autoconf268`` because Leo's erasure-coding lib requires Autoconf 2.65 or higher
+## 1. You need to install ``autoconf`` because Leo's erasure-coding lib requires Autoconf 2.69 or higher
 $ cd <workspace>/
 $ wget http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
 $ tar xvfvz autoconf-2.69.tar.gz
@@ -46,12 +44,12 @@ Written by David J. MacKenzie and Akim Demaille.
 
 ## 2. Furthermore, according to the same reason of ``autoconf``, you need to install the latest ``automake`` manually.
 $ cd <workspace>/
-$ wget http://ftp.gnu.org/gnu/automake/automake-1.13.4.tar.gz
-$ tar xzf automake-1.13.4.tar.gz
-$ cd automake-1.13.4
+$ wget http://ftp.gnu.org/gnu/automake/automake-1.14.1.tar.gz
+$ tar xzf automake-1.14.1.tar.gz
+$ cd automake-1.14.1
 $ ./configure && make && sudo make install
 $ automake --version
-automake (GNU automake) 1.13.4
+automake (GNU automake) 1.14.1
 Copyright (C) 2013 Free Software Foundation, Inc.
 License GPLv2+: GNU GPL version 2 or later <http://gnu.org/licenses/gpl-2.0.html>
 This is free software: you are free to change and redistribute it.
@@ -59,6 +57,19 @@ There is NO WARRANTY, to the extent permitted by law.
 
 Written by Tom Tromey <tromey@redhat.com>
        and Alexandre Duret-Lutz <adl@gnu.org>.
+
+## 3. ISA-L uses YASM, you need to install yasm >1.2.0
+$ cd <workspace>/
+$ wget http://www.tortall.net/projects/yasm/releases/yasm-1.2.0.tar.gz
+$ tar xzf yasm-1.2.0.tar.gz
+$ cd yasm-1.2.0
+$ ./configure && make && sudo make install
+$ yasm --version
+yasm 1.2.0
+Compiled on Oct 10 2013.
+Copyright (c) 2001-2011 Peter Johnson and other Yasm developers.
+Run yasm --license for licensing overview and summary.
+
 ```
 
 ## Data Types
@@ -74,7 +85,7 @@ Written by Tom Tromey <tromey@redhat.com>
 
 ## Exports
 ### Encoding an object
-Encode an object with leo_jerasure's encoding functions
+Encode an object with leo_erasure's encoding functions
 
 #### encode/2
 ```erlang
@@ -105,7 +116,7 @@ encode(CodingClass, CodingParams, Bin) ->
 
 
 ### Decoding an object
-Decode an object with leo_jerasure's decoding functions
+Decode an object with leo_erasure's decoding functions
 
 #### decode/3
 ```erlang

@@ -10,6 +10,8 @@ class IRSCoding : public Coding {
         ERL_NIF_TERM doDecode(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, size_t dataSize);
         vector<ERL_NIF_TERM> doRepair(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, vector<int> repairList);
         void checkParams();
+    private:
+    void gf_gen_decode_matrix(unsigned char* encode_matrix, unsigned char* decode_matrix, vector<int> availBlockIdList,vector<int> outBlockIdList);
 };
 
 #endif

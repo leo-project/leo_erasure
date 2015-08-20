@@ -298,4 +298,4 @@ static ErlNifFunc nif_funcs[] = {
     {"repair", 5, repair}
 };
 
-ERL_NIF_INIT(leo_jerasure, nif_funcs, NULL, NULL, NULL, NULL)
+ERL_NIF_INIT(leo_erasure, nif_funcs, NULL, NULL, NULL, NULL)
