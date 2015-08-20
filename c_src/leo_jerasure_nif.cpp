@@ -10,12 +10,14 @@ using namespace std;
 #include "liberationcoding.h"
 #include "cauchycoding.h"
 #include "rscoding.h"
+#include "irscoding.h"
 
 typedef enum {
     INVALID_CODING = -1,
     CAUCHY_RS = 1,
     VAND_RS = 2,
 	LIBERATION = 3,
+    ISA_RS = 4,
 } CodingType;
 
 Coding* getCoder(CodingType coding, int k, int m, int w, ErlNifEnv* env) {
@@ -26,6 +28,8 @@ Coding* getCoder(CodingType coding, int k, int m, int w, ErlNifEnv* env) {
             return new RSCoding(k,m,w,env);
         case LIBERATION:
             return new LiberationCoding(k,m,w,env);
+        case ISA_RS:
+            return new IRSCoding(k,m,w,env);
         default:
             throw std::invalid_argument("Invalid Coding");
             break;
@@ -41,6 +45,8 @@ CodingType getCoding(char* codingAtom) {
         return VAND_RS;
     if (atomString == "liberation")
         return LIBERATION;
+    if (atomString == "isars")
+        return ISA_RS;
     throw std::invalid_argument("Invalid Coding");
 }
 
