@@ -23,9 +23,11 @@
 -define(CODING_CLASS_VANDRS,     vandrs).
 -define(CODING_CLASS_CAUCHYRS,   cauchyrs).
 -define(CODING_CLASS_LIBERATION, liberation).
+-define(CODING_CLASS_ISA_VANDRS, isars).
 -type(coding_class() :: ?CODING_CLASS_VANDRS |
                         ?CODING_CLASS_CAUCHYRS |
-                        ?CODING_CLASS_LIBERATION).
+                        ?CODING_CLASS_LIBERATION |
+                        ?CODING_CLASS_ISA_VANDRS).
 
 -define(DEF_CODING_CLASS, ?CODING_CLASS_VANDRS).
 -define(DEF_CODING_PARAMS, {10, 4, 8}).
@@ -36,14 +38,17 @@
 -define(DEF_CODING_VANDRS_K,    10).
 -define(DEF_CODING_CAUCHYRS_K,   4).
 -define(DEF_CODING_LIBERATION_K, 4).
+-define(DEF_CODING_ISA_VANDRS_K,10).
 
 -define(DEF_CODING_VANDRS_M,     4).
 -define(DEF_CODING_CAUCHYRS_M,   2).
 -define(DEF_CODING_LIBERATION_M, 2).
+-define(DEF_CODING_ISA_VANDRS_M, 4).
 
 -define(DEF_CODING_VANDRS_W,     8).
 -define(DEF_CODING_CAUCHYRS_W,   3).
 -define(DEF_CODING_LIBERATION_W, 7).
+-define(DEF_CODING_ISA_VANDRS_W, 8).
 
 -define(coding_params_k(_CodingClass),
         case _CodingClass of
@@ -52,7 +57,9 @@
             ?CODING_CLASS_CAUCHYRS ->
                 ?DEF_CODING_CAUCHYRS_K;
             ?CODING_CLASS_LIBERATION ->
-                ?DEF_CODING_LIBERATION_K
+                ?DEF_CODING_LIBERATION_K;
+            ?CODING_CLASS_ISA_VANDRS ->
+                ?DEF_CODING_ISA_VANDRS_K
         end).
 -define(coding_params_m(_CodingClass),
         case _CodingClass of
@@ -61,7 +68,9 @@
             ?CODING_CLASS_CAUCHYRS ->
                 ?DEF_CODING_CAUCHYRS_M;
             ?CODING_CLASS_LIBERATION ->
-                ?DEF_CODING_LIBERATION_M
+                ?DEF_CODING_LIBERATION_M;
+            ?CODING_CLASS_ISA_VANDRS ->
+                ?DEF_CODING_ISA_VANDRS_M
         end).
 -define(coding_params_w(_CodingClass),
         case _CodingClass of
@@ -70,5 +79,7 @@
             ?CODING_CLASS_CAUCHYRS ->
                 ?DEF_CODING_CAUCHYRS_W;
             ?CODING_CLASS_LIBERATION ->
-                ?DEF_CODING_LIBERATION_W
+                ?DEF_CODING_LIBERATION_W;
+            ?CODING_CLASS_ISA_VANDRS ->
+                ?DEF_CODING_ISA_VANDRS_W
         end).

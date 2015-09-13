@@ -18,6 +18,11 @@ fi
 
 BASEDIR="$PWD"
 
+if [ `uname` = 'Darwin' ]; then
+    CONFIG="./configure --target=darwin"
+else
+    CONFIG="./configure"
+fi
 
 # detecting gmake and if exists use it
 # if not use make
@@ -34,6 +39,7 @@ case "$1" in
     clean)
         rm -rf jerasure
         rm -rf gf-complete
+        rm -rf isa-l
         ;;
 
     get-deps)
@@ -50,6 +56,14 @@ case "$1" in
             ($LIBTOOLIZE && autoreconf --install && ./configure LDFLAGS=-L$GFP/src/.libs/ CPPFLAGS=-I$GFP/include && $MAKE)
             cd ..
         fi
+        if [ ! -d isa-l/.libs ]; then
+            wget https://01.org/sites/default/files/downloads/intelr-storage-acceleration-library-open-source-version/isa-l-2.14.0.tar.gz
+            tar zxvf isa-l-2.14.0.tar.gz
+            rm isa-l-2.14.0.tar.gz
+            mv isa-l-2.14.0 isa-l
+            cd isa-l
+            ($LIBTOOLIZE && autoreconf --install && $CONFIG && $MAKE)
+        fi
         ;;
 
     *)
@@ -65,6 +79,14 @@ case "$1" in
             cd jerasure
             ($LIBTOOLIZE && autoreconf --install && ./configure LDFLAGS=-L$GFP/src/.libs/ CPPFLAGS=-I$GFP/include && $MAKE)
             cd ..
+        fi
+        if [ ! -d isa-l/.libs ]; then
+            wget https://01.org/sites/default/files/downloads/intelr-storage-acceleration-library-open-source-version/isa-l-2.14.0.tar.gz
+            tar zxvf isa-l-2.14.0.tar.gz
+            rm isa-l-2.14.0.tar.gz
+            mv isa-l-2.14.0 isa-l
+            cd isa-l
+            ($LIBTOOLIZE && autoreconf --install && $CONFIG && $MAKE)
         fi
         ;;
 esac

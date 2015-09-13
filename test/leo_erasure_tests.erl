@@ -40,10 +40,12 @@ long_process() ->
     check_correctness(Bin, vandrs, {10, 4,-1}, 1),
     check_correctness(Bin, cauchyrs, {4, 2,-1}, 1),
     check_correctness(Bin, liberation, {4, 2,-1}, 1),
+    check_correctness(Bin, isars, {10, 4,-1}, 1),
 
     check_correctness(Bin, vandrs, {10, 4, 0}, 1),
     check_correctness(Bin, cauchyrs, {4, 2, 0}, 1),
     check_correctness(Bin, liberation, {4, 2, 0}, 1),
+    check_correctness(Bin, isars, {10, 4, 0}, 1),
 
     check_correctness(Bin, vandrs, {4,2,8}, 0),
     check_correctness(Bin, vandrs, {4,2,8}, 1),
@@ -65,6 +67,19 @@ long_process() ->
     check_correctness(Bin, liberation, {4,2,7}, 0),
     check_correctness(Bin, liberation, {4,2,7}, 1),
     check_correctness(Bin, liberation, {4,2,7}, 2),
+
+    check_correctness(Bin, isars, {4,2,8}, 0),
+    check_correctness(Bin, isars, {4,2,8}, 1),
+    check_correctness(Bin, isars, {4,2,8}, 2),
+    check_correctness(Bin, isars, {8,3,8}, 0),
+    check_correctness(Bin, isars, {8,3,8}, 1),
+    check_correctness(Bin, isars, {8,3,8}, 2),
+    check_correctness(Bin, isars, {8,3,8}, 3),
+    check_correctness(Bin, isars, {10,4,8}, 0),
+    check_correctness(Bin, isars, {10,4,8}, 1),
+    check_correctness(Bin, isars, {10,4,8}, 2),
+    check_correctness(Bin, isars, {10,4,8}, 3),
+    check_correctness(Bin, isars, {10,4,8}, 4),
     ok.
 
 %% @private
@@ -105,7 +120,8 @@ repair_test() ->
     Bin = crypto:rand_bytes(?TEST_SIZE),
     repair_test(Bin, vandrs, {10,4,8}, 2),
     repair_test(Bin, cauchyrs, {4,2,3}, 2),
-    repair_test(Bin, liberation, {4,2,7}, 2).
+    repair_test(Bin, liberation, {4,2,7}, 2),
+    repair_test(Bin, isars, {10,4,8}, 2).
 
 repair_test(Bin, CodingClass, CodingParams, Erasure) ->
     ?debugFmt(" * ~p ~p with ~p failures(all cases)", [CodingClass, CodingParams, Erasure]),
@@ -192,7 +208,8 @@ bench_encode_test() ->
     ?debugMsg(" ===== Encoding Benchmark Test ====="),
     bench_encode(vandrs,{10,4,8}),
     bench_encode(cauchyrs,{10,4,10}),
-    bench_encode(liberation,{10,2,11}).
+    bench_encode(liberation,{10,2,11}),
+    bench_encode(isars,{10,4,8}).
 
 parameters_test() ->
     ?debugMsg(" ===== Testing Parameters ====="),
@@ -224,6 +241,14 @@ parameters_test() ->
     BlockList_3 = [B3 || {_,B3} <- IdWithBlockL_3],
     {error, _} = leo_erasure:decode(liberation, {4,2,5}, BlockList_3, [0,1,2], byte_size(Bin)),
 
+    ?debugMsg(" * Invalid: isars {4,2,7}"),
+    {error, _} = leo_erasure:encode(isars, {4,2,7}, Bin),
+
+    ?debugMsg(" * Invalid: isars {4,2,8} with 3 failures"),
+    {ok, IdWithBlockL_4} = leo_erasure:encode(isars, {4,2,8}, Bin),
+    BlockList_4 = [B4 || {_,B4} <- IdWithBlockL_4],
+    {error, _} = leo_erasure:decode(isars, {4,2,8}, BlockList_4, [0,1,2], byte_size(Bin)),
+
     ?debugMsg(" * Invalid: Unknown {4,2,3}"),
     {error, _} = leo_erasure:encode(unkown, {4,2,3}, Bin),
 
@@ -234,19 +259,19 @@ parameters_test() ->
     {error, _} = leo_erasure:encode({4,2,5}, liberation, Bin),
 
     ?debugMsg(" * Simple encoder"),
-    {ok, IdWithBlockL_4} = leo_erasure:encode({10,4}, Bin),
-    {ok, IdWithBlockL_5} = leo_erasure:encode({8, 3}, Bin),
-    {ok, IdWithBlockL_6} = leo_erasure:encode({6, 2}, Bin),
-    ?assertEqual(14, length(IdWithBlockL_4)),
-    ?assertEqual(11, length(IdWithBlockL_5)),
-    ?assertEqual(8,  length(IdWithBlockL_6)),
+    {ok, IdWithBlockL_5} = leo_erasure:encode({10,4}, Bin),
+    {ok, IdWithBlockL_6} = leo_erasure:encode({8, 3}, Bin),
+    {ok, IdWithBlockL_7} = leo_erasure:encode({6, 2}, Bin),
+    ?assertEqual(14, length(IdWithBlockL_5)),
+    ?assertEqual(11, length(IdWithBlockL_6)),
+    ?assertEqual(8,  length(IdWithBlockL_7)),
 
-    {ok, Obj_4} = leo_erasure:decode({10,4}, IdWithBlockL_4, byte_size(Bin)),
-    {ok, Obj_5} = leo_erasure:decode({8,3},  IdWithBlockL_5, byte_size(Bin)),
-    {ok, Obj_6} = leo_erasure:decode({6, 2}, IdWithBlockL_6, byte_size(Bin)),
-    ?assertEqual(Bin, Obj_4),
+    {ok, Obj_5} = leo_erasure:decode({10,4}, IdWithBlockL_5, byte_size(Bin)),
+    {ok, Obj_6} = leo_erasure:decode({8,3},  IdWithBlockL_6, byte_size(Bin)),
+    {ok, Obj_7} = leo_erasure:decode({6, 2}, IdWithBlockL_7, byte_size(Bin)),
     ?assertEqual(Bin, Obj_5),
     ?assertEqual(Bin, Obj_6),
+    ?assertEqual(Bin, Obj_7),
     ok.
 
 
