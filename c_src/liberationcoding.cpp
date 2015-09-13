@@ -177,9 +177,9 @@ vector<ERL_NIF_TERM> LiberationCoding::doRepair(vector<ERL_NIF_TERM> blockList, 
 
     vector<ERL_NIF_TERM> repairBlocks;
     int repairId;
+    ERL_NIF_TERM allBlocksBin = enif_make_binary(env, &tmpBin);
     for(size_t i = 0; i < repairList.size() - 1; ++i) {
         repairId = repairList[i];
-        ERL_NIF_TERM allBlocksBin = enif_make_binary(env, &tmpBin);
         ERL_NIF_TERM block = enif_make_sub_binary(env, allBlocksBin, repairId * blockSize, blockSize); 
         repairBlocks.push_back(block);
     }
