@@ -62,7 +62,7 @@ case "$1" in
             rm isa-l-2.14.0.tar.gz
             mv isa-l-2.14.0 isa-l
             cd isa-l
-            ($LIBTOOLIZE && autoreconf --install && $CONFIG && $MAKE)
+            ($CONFIG && $MAKE)
         fi
         ;;
 
@@ -86,7 +86,7 @@ case "$1" in
             rm isa-l-2.14.0.tar.gz
             mv isa-l-2.14.0 isa-l
             cd isa-l
-            ($LIBTOOLIZE && autoreconf --install && $CONFIG && $MAKE)
+            ($CONFIG && $MAKE)
         fi
         ;;
 esac
