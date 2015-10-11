@@ -20,6 +20,9 @@ doc: compile
 	@$(REBAR) doc
 clean:
 	@$(REBAR) clean skip_deps=true
+	rm -rf c_src/isa-l
+	rm -rf c_src/gf-complete
+	rm -rf c_src/jerasure
 distclean:
 	@$(REBAR) delete-deps
 	@$(REBAR) clean

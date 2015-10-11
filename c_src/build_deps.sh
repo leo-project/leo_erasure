@@ -57,10 +57,7 @@ case "$1" in
             cd ..
         fi
         if [ ! -d isa-l/.libs ]; then
-            wget https://01.org/sites/default/files/downloads/intelr-storage-acceleration-library-open-source-version/isa-l-2.14.0.tar.gz
-            tar zxvf isa-l-2.14.0.tar.gz
-            rm isa-l-2.14.0.tar.gz
-            mv isa-l-2.14.0 isa-l
+            git clone https://github.com/leo-project/isa-l.git
             cd isa-l
             ($CONFIG && $MAKE)
         fi
@@ -81,10 +78,7 @@ case "$1" in
             cd ..
         fi
         if [ ! -d isa-l/.libs ]; then
-            wget https://01.org/sites/default/files/downloads/intelr-storage-acceleration-library-open-source-version/isa-l-2.14.0.tar.gz
-            tar zxvf isa-l-2.14.0.tar.gz
-            rm isa-l-2.14.0.tar.gz
-            mv isa-l-2.14.0 isa-l
+            git clone https://github.com/leo-project/isa-l.git
             cd isa-l
             ($CONFIG && $MAKE)
         fi
