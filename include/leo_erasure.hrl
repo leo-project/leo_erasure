@@ -83,3 +83,12 @@
             ?CODING_CLASS_ISA_VANDRS ->
                 ?DEF_CODING_ISA_VANDRS_W
         end).
+
+%% Retrieve default coding class (default:vandrs)
+-define(env_default_coder(),
+        case application:get_env(leo_erasure, default_coder) of
+            {ok, EnvDefaultCoder} ->
+                EnvDefaultCoder;
+            _ ->
+                ?CODING_CLASS_VANDRS
+        end).
