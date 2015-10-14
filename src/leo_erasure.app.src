@@ -23,7 +23,7 @@
 {application, leo_erasure,
  [
   {description, "Erasure code library for Erlang"},
-  {vsn, "0.4.2"},
+  {vsn, "0.6.0"},
   {modules, [leo_erasure]},
   {registered, []},
   {applications, [
