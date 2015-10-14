@@ -22,7 +22,7 @@
 %%======================================================================
 {application, leo_erasure,
  [
-  {description, "Jerasure Library Binding"},
+  {description, "Erasure code library for Erlang"},
   {vsn, "0.4.2"},
   {modules, [leo_erasure]},
   {registered, []},
