@@ -1,3 +1,24 @@
+// -------------------------------------------------------------------
+//
+// leo_erasure: Erasure code library for Erlang
+//
+// Copyright (c) 2012-2015 Rakuten, Inc.
+//
+// This file is provided to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file
+// except in compliance with the License.  You may obtain
+// a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+// -------------------------------------------------------------------
 #include <stdio.h>
 #include <stdint.h>
 #include <vector>
@@ -6,16 +27,17 @@
 using namespace std;
 
 #include "erl_nif.h"
-
 #include "liberationcoding.h"
 #include "cauchycoding.h"
 #include "rscoding.h"
+#include "irscoding.h"
 
 typedef enum {
     INVALID_CODING = -1,
     CAUCHY_RS = 1,
     VAND_RS = 2,
 	LIBERATION = 3,
+    ISA_RS = 4,
 } CodingType;
 
 Coding* getCoder(CodingType coding, int k, int m, int w, ErlNifEnv* env) {
@@ -26,6 +48,8 @@ Coding* getCoder(CodingType coding, int k, int m, int w, ErlNifEnv* env) {
             return new RSCoding(k,m,w,env);
         case LIBERATION:
             return new LiberationCoding(k,m,w,env);
+        case ISA_RS:
+            return new IRSCoding(k,m,w,env);
         default:
             throw std::invalid_argument("Invalid Coding");
             break;
@@ -41,6 +65,8 @@ CodingType getCoding(char* codingAtom) {
         return VAND_RS;
     if (atomString == "liberation")
         return LIBERATION;
+    if (atomString == "isars")
+        return ISA_RS;
     throw std::invalid_argument("Invalid Coding");
 }
 
@@ -67,7 +93,6 @@ static ERL_NIF_TERM errTuple(ErlNifEnv *env,const char* message) {
     ERL_NIF_TERM reason = enif_make_string(env, message, ERL_NIF_LATIN1);
     return enif_make_tuple2(env, error, reason);
 }
-
 
 
 static ERL_NIF_TERM
@@ -292,4 +317,4 @@ static ErlNifFunc nif_funcs[] = {
     {"repair", 5, repair}
 };
 
-ERL_NIF_INIT(leo_jerasure, nif_funcs, NULL, NULL, NULL, NULL)
+ERL_NIF_INIT(leo_erasure, nif_funcs, NULL, NULL, NULL, NULL)

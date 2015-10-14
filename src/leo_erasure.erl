@@ -19,7 +19,7 @@
 %% under the License.
 %%
 %%======================================================================
--module(leo_jerasure).
+-module(leo_erasure).
 
 -export([encode_file/1, encode_file/3,
          decode_file/2, decode_file/4, write_blocks/3]).
@@ -31,7 +31,7 @@
 
 -define(BLOCKSTOR, "blocks/").
 
--include("leo_jerasure.hrl").
+-include("leo_erasure.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -ifdef(TEST).
 -endif.
@@ -48,12 +48,12 @@ init() ->
                  {error, bad_name} ->
                      case code:which(?MODULE) of
                          Filename when is_list(Filename) ->
-                             filename:join([filename:dirname(Filename),"../priv", "leo_jerasure"]);
+                             filename:join([filename:dirname(Filename),"../priv", "leo_erasure"]);
                          _ ->
-                             filename:join("../priv", "leo_jerasure")
+                             filename:join("../priv", "leo_erasure")
                      end;
                  Dir ->
-                     filename:join(Dir, "leo_jerasure")
+                     filename:join(Dir, "leo_erasure")
              end,
     erlang:load_nif(SoName, 0),
     filelib:ensure_dir(?BLOCKSTOR).
@@ -80,7 +80,8 @@ write_blocks(FileName, [H|T], Cnt) ->
                                         Cnt::pos_integer(),
                                         Reason::file:posix()).
 encode_file(FileName) ->
-    encode_file(?DEF_CODING_CLASS, ?DEF_CODING_PARAMS, FileName).
+    CodingClass = ?env_default_coder(),
+    encode_file(CodingClass, ?DEF_CODING_PARAMS, FileName).
 
 -spec(encode_file(Coding, CodingParams, FileName) ->
              Cnt | {error, Reason} when Coding::coding_class(),
@@ -113,7 +114,8 @@ encode_file(Coding, CodingParams, FileName) ->
                                        ObjSize::non_neg_integer(),
                                        Reason::any()).
 decode_file(FileName, ObjSize) ->
-    decode_file(?DEF_CODING_CLASS, ?DEF_CODING_PARAMS, FileName, ObjSize).
+    CodingClass = ?env_default_coder(),
+    decode_file(CodingClass, ?DEF_CODING_PARAMS, FileName, ObjSize).
 
 -spec(decode_file(CodingClass, CodingParams, FileName, ObjSize) ->
              ok | {error, Reason} when CodingClass::coding_class(),
@@ -140,7 +142,7 @@ decode_file(CodingClass, CodingParams, FileName, ObjSize) ->
                                                       Bin::binary(),
                                                       IdWithBlockL::[id_with_block()]).
 encode({CodingParam_K, CodingParam_M}, Bin) ->
-    CodingClass = ?DEF_CODING_CLASS,
+    CodingClass = ?env_default_coder(),
     CodingParams = {CodingParam_K, CodingParam_M, ?coding_params_w(CodingClass)},
     encode(CodingClass, CodingParams, Bin).
 
@@ -177,7 +179,7 @@ encode(_CodingClass,_CodingParams,_Bin,_TotalSize) ->
                                              ObjSize::integer(),
                                              Bin::binary()).
 decode({CodingParam_K, CodingParam_M}, IdWithBlockL, ObjSize) ->
-    CodingClass = ?DEF_CODING_CLASS,
+    CodingClass = ?env_default_coder(),
     CodingParams = {CodingParam_K, CodingParam_M, ?coding_params_w(CodingClass)},
     decode(CodingClass, CodingParams, IdWithBlockL, ObjSize).
 

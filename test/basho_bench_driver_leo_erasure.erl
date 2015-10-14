@@ -19,7 +19,7 @@
 %% under the License.
 %%
 %%======================================================================
--module(basho_bench_driver_leo_jerasure).
+-module(basho_bench_driver_leo_erasure).
 
 -export([new/1,
          run/4]).
@@ -64,7 +64,7 @@ new(_Id) ->
 
     BinSizeBits = BinSize * 8,
     Bin = << 0:BinSizeBits >>,
-    {ok, BlockList} = leo_jerasure:encode(Coding, CodingParams, Bin, BinSize),
+    {ok, BlockList} = leo_erasure:encode(Coding, CodingParams, Bin, BinSize),
     N = length(BlockList),
     IdList = lists:seq(0, N - 1),
     BlockWithIdList = lists:zip(BlockList, IdList),
@@ -87,7 +87,7 @@ new(_Id) ->
 run(encode, KeyGen, ValGen, #state{ coding = Coding, coding_params = CodingParams } = State) ->
     _Key = KeyGen(),
     Val = ValGen(),
-    case leo_jerasure:encode(Coding, CodingParams, Val, byte_size(Val)) of
+    case leo_erasure:encode(Coding, CodingParams, Val, byte_size(Val)) of
         {error, Cause} ->
             {error, Cause, State};
         _ ->
@@ -100,7 +100,7 @@ run(decode, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParam
     Key = KeyGen(),
     AvailList = lists:nth(Key rem DecodeCombSize + 1, DecodeCombs),
     Selected = filter_block(BlockWithIdList, AvailList),
-    case leo_jerasure:decode(Coding, CodingParams, Selected, BinSize) of
+    case leo_erasure:decode(Coding, CodingParams, Selected, BinSize) of
         {error, Cause} ->
             {error, Cause, State};
         _ ->
@@ -116,7 +116,7 @@ run(repair, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParam
     RemainList = lists:subtract(FullList, RepairList),
     AvailList = lists:sublist(RemainList, 1, K),
     Selected = filter_block(BlockWithIdList, AvailList),
-    case leo_jerasure:repair(Coding, CodingParams, Selected, RepairList) of
+    case leo_erasure:repair(Coding, CodingParams, Selected, RepairList) of
         {ok, _Blocks} ->
             {ok, State};
         {error, Cause} ->

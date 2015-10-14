@@ -1,3 +1,24 @@
+// -------------------------------------------------------------------
+//
+// leo_erasure: Erasure code library for Erlang
+//
+// Copyright (c) 2012-2015 Rakuten, Inc.
+//
+// This file is provided to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file
+// except in compliance with the License.  You may obtain
+// a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+// -------------------------------------------------------------------
 #include <string.h>
 #include <set>
 
@@ -52,7 +73,7 @@ vector<ERL_NIF_TERM> CauchyCoding::doEncode(ERL_NIF_TERM dataBin) {
 
     vector<ERL_NIF_TERM> blockList;
     for(int i = 0; i < filled; ++i) {
-        blockList.push_back(enif_make_sub_binary(env, dataBin, i * blockSize, blockSize)); 
+        blockList.push_back(enif_make_sub_binary(env, dataBin, i * blockSize, blockSize));
     }
     ERL_NIF_TERM tmpBin = enif_make_binary(env, &tmp);
     offset = 0;
@@ -70,7 +91,7 @@ vector<ERL_NIF_TERM> CauchyCoding::doEncode(ERL_NIF_TERM dataBin) {
 ERL_NIF_TERM CauchyCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, size_t dataSize) {
 
     set<int> availSet(blockIdList.begin(), blockIdList.end());
-    if (availSet.size() < (unsigned int)k) 
+    if (availSet.size() < (unsigned int)k)
         throw std::invalid_argument("Not Enough Blocks");
     else if (availSet.size() < blockIdList.size()) {
         throw std::invalid_argument("Blocks should be unique");
@@ -87,7 +108,7 @@ ERL_NIF_TERM CauchyCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> 
 
     bool needFix = false;
 
-    for(int i = 0; i < k; ++i) 
+    for(int i = 0; i < k; ++i)
         if (availSet.count(i) == 0) {
             needFix = true;
         }
@@ -138,7 +159,7 @@ ERL_NIF_TERM CauchyCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> 
 vector<ERL_NIF_TERM> CauchyCoding::doRepair(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, vector<int> repairList) {
 
     set<int> availSet(blockIdList.begin(), blockIdList.end());
-    if (availSet.size() < (unsigned int)k) 
+    if (availSet.size() < (unsigned int)k)
         throw std::invalid_argument("Not Enough Blocks");
     else if (availSet.size() < blockIdList.size()) {
         throw std::invalid_argument("Blocks should be unique");
@@ -179,10 +200,10 @@ vector<ERL_NIF_TERM> CauchyCoding::doRepair(vector<ERL_NIF_TERM> blockList, vect
 
     vector<ERL_NIF_TERM> repairBlocks;
     int repairId;
+    ERL_NIF_TERM allBlocksBin = enif_make_binary(env, &tmpBin);
     for(size_t i = 0; i < repairList.size() - 1; ++i) {
         repairId = repairList[i];
-        ERL_NIF_TERM allBlocksBin = enif_make_binary(env, &tmpBin);
-        ERL_NIF_TERM block = enif_make_sub_binary(env, allBlocksBin, repairId * blockSize, blockSize); 
+        ERL_NIF_TERM block = enif_make_sub_binary(env, allBlocksBin, repairId * blockSize, blockSize);
         repairBlocks.push_back(block);
     }
 
