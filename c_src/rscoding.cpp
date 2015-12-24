@@ -35,7 +35,6 @@ void RSCoding::checkParams() {
 }
 
 vector<ERL_NIF_TERM> RSCoding::doEncode(ERL_NIF_TERM dataBin) {
-    int *matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
     char* dataBlocks[k];
     char* codeBlocks[m];
 
@@ -65,6 +64,10 @@ vector<ERL_NIF_TERM> RSCoding::doEncode(ERL_NIF_TERM dataBin) {
             codeBlocks[i - k] = alignedHead + offset;
     }
 
+    int *matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
+    if (!matrix) {
+        throw new std::bad_alloc();
+    }
     jerasure_matrix_encode(k, m, w, matrix, dataBlocks, codeBlocks, blockSize);
 
     vector<ERL_NIF_TERM> blockList;
@@ -138,6 +141,9 @@ ERL_NIF_TERM RSCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> bloc
     erasures[j] = -1;
 
     int *matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
+    if (!matrix) {
+        throw new std::bad_alloc();
+    }
     jerasure_matrix_decode_data(k, m, w, matrix, 1, erasures, dataBlocks, codeBlocks, blockSize);
 
     ERL_NIF_TERM allBlocksBin = enif_make_binary(env, &tmpBin);
@@ -186,6 +192,9 @@ vector<ERL_NIF_TERM> RSCoding::doRepair(vector<ERL_NIF_TERM> blockList, vector<i
     repairList.push_back(-1);
     int *selected = &repairList[0];
     int *matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
+    if (!matrix) {
+        throw new std::bad_alloc();
+    }
     jerasure_matrix_decode_selected(k, m, w, matrix, 1, erasures, selected, dataBlocks, codeBlocks, blockSize);
 
     vector<ERL_NIF_TERM> repairBlocks;
