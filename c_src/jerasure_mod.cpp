@@ -145,8 +145,8 @@ int jerasure_matrix_decode_data(int k, int m, int w, int *matrix, int row_k_ones
         tmpids = talloc(int, k);
         if (!tmpids) {
             free(erased);
-            free(dm_ids);
-            free(decoding_matrix);
+            if (dm_ids != NULL) free(dm_ids);
+            if (decoding_matrix != NULL) free(decoding_matrix);
             return -1;
         }
         for (i = 0; i < k; i++) {
@@ -260,8 +260,8 @@ int jerasure_matrix_decode_selected(int k, int m, int w, int *matrix, int row_k_
             tmpids = talloc(int, k);
             if (!tmpids) {
                 free(erased);
-                free(dm_ids);
-                free(decoding_matrix);
+                if (dm_ids != NULL) free(dm_ids);
+                if (decoding_matrix != NULL) free(decoding_matrix);
                 return -1;
             }
             for (i = 0; i < k; i++) {
@@ -461,7 +461,7 @@ static int **jerasure_generate_decoding_data_schedule(int k, int m, int w, int *
 {
     //int i, j, x, drive, y, index, z;
     int i,x;
-    int *decoding_matrix, *inverse, *real_decoding_matrix;
+    int *decoding_matrix, *inverse;
     int *ptr;
     int *row_ids;
     int *ind_to_row;
@@ -497,12 +497,7 @@ static int **jerasure_generate_decoding_data_schedule(int k, int m, int w, int *
        will do a good job.    This matrix has w*e rows, where e is the
        number of erasures (ddf+cdf) */
 
-    real_decoding_matrix = talloc(int, k*w*(cdf+ddf)*w);
-    if (!real_decoding_matrix) {
-        free(row_ids);
-        free(ind_to_row);
-        return NULL;
-    }
+    int real_decoding_matrix [k*w*(cdf+ddf)*w];
 
     /* First, if any data drives have failed, then initialize the first
        ddf*w rows of the decoding matrix from the standard decoding
@@ -564,7 +559,6 @@ static int **jerasure_generate_decoding_data_schedule(int k, int m, int w, int *
     }
     free(row_ids);
     free(ind_to_row);
-    free(real_decoding_matrix);
     return schedule;
 }
 
@@ -573,7 +567,7 @@ static int **jerasure_generate_decoding_selected_schedule(
         int *erasures, int* selected, int smart)
 {
     int i, j, x, drive, y, index, z;
-    int *decoding_matrix, *inverse, *real_decoding_matrix;
+    int *decoding_matrix, *inverse;
     int *ptr;
     int *row_ids;
     int *ind_to_row;
@@ -620,12 +614,7 @@ static int **jerasure_generate_decoding_selected_schedule(
     if (fix_all_data)
         decoding_matrix_size = ddf + code_fix_size;
 
-    real_decoding_matrix = talloc(int, k*w*w*decoding_matrix_size);
-    if (!real_decoding_matrix) {
-        free(row_ids);
-        free(ind_to_row);
-        return NULL;
-    }
+    int real_decoding_matrix [k*w*w*decoding_matrix_size];
 
     /* First, if any data drives have failed, then initialize the first
        ddf*w rows of the decoding matrix from the standard decoding
@@ -741,6 +730,5 @@ static int **jerasure_generate_decoding_selected_schedule(
     }
     free(row_ids);
     free(ind_to_row);
-    free(real_decoding_matrix);
     return schedule;
 }

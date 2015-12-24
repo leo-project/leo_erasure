@@ -108,7 +108,7 @@ ERL_NIF_TERM IRSCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> blo
     vector<int> outBlockIdList;
     ErlNifBinary tmpBin;
     enif_alloc_binary(blockSize * k, &tmpBin);
-    unsigned char* outBlocks[dataErasures];
+    unsigned char* outBlocks[k];
 
     for(int i = 0; i < k; ++i)
         if (availSet.count(i) == 0) {
