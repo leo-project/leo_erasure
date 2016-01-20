@@ -176,6 +176,10 @@ repair(CodingClass, CodingParams, IdWithBlockL) ->
     * IdWithBlockL = [[id_with_block()](#id_with_block())]
     * Cause = any()
 
+## Notes
+* Stack Size [Related Discussion](https://github.com/leo-project/leo_erasure/pull/1)
+    * After 0.6.0, temporary structures such as decoding schedules are stored in stack, it would take `~10*k*k*w*w*(size of int)` for each instance with Cauchy-RS or Liberation Code. Pratically, using paramters `w=8, k=20, m<k` with Cauchy-RS would consume `~1MB` 
+
 ## Sponsors
 
 LeoProject/LeoFS is sponsored by [Rakuten, Inc.](http://global.rakuten.com/corp/) and supported by [Rakuten Institute of Technology](http://rit.rakuten.co.jp/).
