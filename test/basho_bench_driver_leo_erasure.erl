@@ -67,7 +67,7 @@ new(_Id) ->
     {ok, BlockList} = leo_erasure:encode(Coding, CodingParams, Bin, BinSize),
     N = length(BlockList),
     IdList = lists:seq(0, N - 1),
-    BlockWithIdList = lists:zip(BlockList, IdList),
+    IdWithBlockList = lists:zip(IdList, BlockList),
 
     {K, M, _} = CodingParams,
     FullList = lists:seq(0, K + M - 1),
@@ -79,7 +79,7 @@ new(_Id) ->
                  coding_params = CodingParams,
                  bin = Bin,
                  bin_size = BinSize,
-                 block_id_list = BlockWithIdList,
+                 block_id_list = IdWithBlockList,
                  erasure = Erasure,
                  decode_comb = DecodeCombs,
                  decode_comb_size = DecodeCombSize}}.
@@ -95,11 +95,11 @@ run(encode, KeyGen, ValGen, #state{ coding = Coding, coding_params = CodingParam
     end;
 
 run(decode, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParams,
-                                    bin_size = BinSize, block_id_list = BlockWithIdList,
+                                    bin_size = BinSize, block_id_list = IdWithBlockList,
                                     decode_comb = DecodeCombs, decode_comb_size = DecodeCombSize } = State) ->
     Key = KeyGen(),
     AvailList = lists:nth(Key rem DecodeCombSize + 1, DecodeCombs),
-    Selected = filter_block(BlockWithIdList, AvailList),
+    Selected = filter_block(IdWithBlockList, AvailList),
     case leo_erasure:decode(Coding, CodingParams, Selected, BinSize) of
         {error, Cause} ->
             {error, Cause, State};
@@ -108,14 +108,14 @@ run(decode, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParam
     end;
 
 run(repair, KeyGen, _ValGen, #state{coding = Coding, coding_params = CodingParams,
-                                    block_id_list = BlockWithIdList, erasure = Erasure } = State) ->
+                                    block_id_list = IdWithBlockList, erasure = Erasure } = State) ->
     Key = KeyGen(),
     {K, M, _} = CodingParams,
     FullList = lists:seq(0, K + M - 1),
     RepairList = [N rem (K + M) || N <- lists:seq(Key, Key + Erasure - 1)],
     RemainList = lists:subtract(FullList, RepairList),
     AvailList = lists:sublist(RemainList, 1, K),
-    Selected = filter_block(BlockWithIdList, AvailList),
+    Selected = filter_block(IdWithBlockList, AvailList),
     case leo_erasure:repair(Coding, CodingParams, Selected, RepairList) of
         {ok, _Blocks} ->
             {ok, State};
