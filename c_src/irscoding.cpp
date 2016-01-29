@@ -121,15 +121,8 @@ ERL_NIF_TERM IRSCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> blo
         }
 
     if (!needFix) {
-        ErlNifBinary file;
-        enif_alloc_binary(dataSize, &file);
-        size_t copySize, offset = 0;
-        for(int i = 0; i < k; ++i) {
-            offset = i * blockSize;
-            copySize = min(dataSize - offset, blockSize);
-            memcpy(file.data + offset, blocks[i].data, copySize);
-        }
-        ERL_NIF_TERM bin = enif_make_binary(env, &file);
+        ERL_NIF_TERM allBlocksBin = enif_make_binary(env, &tmpBin);
+        ERL_NIF_TERM bin = enif_make_sub_binary(env, allBlocksBin, 0, dataSize);
         return bin;
     }
 
