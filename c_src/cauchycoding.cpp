@@ -25,7 +25,6 @@
 #include "cauchycoding.h"
 
 #include "jerasure.h"
-#include "jerasure_mod.h"
 #include "cauchy.h"
 
 void CauchyCoding::checkParams() {

@@ -24,7 +24,6 @@
 
 #include "liberationcoding.h"
 #include "jerasure.h"
-#include "jerasure_mod.h"
 #include "liberation.h"
 
 void LiberationCoding::checkParams() {

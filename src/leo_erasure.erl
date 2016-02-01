@@ -56,6 +56,7 @@ init() ->
                      filename:join(Dir, "leo_erasure")
              end,
     erlang:load_nif(SoName, 0),
+    ok = gf_init(),
     filelib:ensure_dir(?BLOCKSTOR).
 
 
@@ -244,6 +245,9 @@ repair(CodingClass, CodingParams, IdWithBlockL) ->
 repair(_CodingClass,_CodingParams,_BlockL,_IdList,_RepairIdList) ->
     exit(nif_library_not_loaded).
 
+-spec(gf_init() -> ok | {error, any()}).
+gf_init() ->
+    exit(nif_library_not_loaded).
 
 %%--------------------------------------------------------------------
 %% INNTERNAL FUNCTIONS
