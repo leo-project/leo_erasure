@@ -72,20 +72,44 @@ CodingType getCoding(char* codingAtom) {
 
 vector<ERL_NIF_TERM> doEncode(ERL_NIF_TERM data, CodingType coding, int k, int m, int w, ErlNifEnv* env) {
     Coding* coder = getCoder(coding, k, m, w, env);
-    coder->checkParams();
-    return coder->doEncode(data);
+    vector<ERL_NIF_TERM> ret;
+    try {
+        coder->checkParams();
+        ret = coder->doEncode(data);
+    } catch (std::exception &e) {
+        delete coder;
+        throw e;
+    }
+    delete coder;
+    return ret;
 }
 
 ERL_NIF_TERM doDecode(vector<ERL_NIF_TERM> blockList, vector<int> idList, size_t fileSize, CodingType coding, int k, int m, int w, ErlNifEnv* env) {
     Coding* coder = getCoder(coding, k, m, w, env);
-    coder->checkParams();
-    return coder->doDecode(blockList, idList, fileSize);
+    ERL_NIF_TERM ret;
+    try {
+        coder->checkParams();
+        ret = coder->doDecode(blockList, idList, fileSize);
+    } catch (std::exception &e) {
+        delete coder;
+        throw e;
+    }
+    delete coder;
+    return ret;
 }
 
 vector<ERL_NIF_TERM> doRepair(vector<ERL_NIF_TERM> blockList, vector<int> idList, vector<int> repairList, CodingType coding, int k, int m, int w, ErlNifEnv* env) {
     Coding* coder = getCoder(coding, k, m, w, env);
-    coder->checkParams();
-    return coder->doRepair(blockList, idList, repairList);
+    vector<ERL_NIF_TERM> ret;
+    try {
+        coder->checkParams();
+        ret = coder->doRepair(blockList, idList, repairList);
+    } catch (std::exception &e) {
+        delete coder;
+        throw e;
+    }
+    delete coder;
+    return ret;
 }
 
 static ERL_NIF_TERM errTuple(ErlNifEnv *env,const char* message) {
@@ -93,7 +117,6 @@ static ERL_NIF_TERM errTuple(ErlNifEnv *env,const char* message) {
     ERL_NIF_TERM reason = enif_make_string(env, message, ERL_NIF_LATIN1);
     return enif_make_tuple2(env, error, reason);
 }
-
 
 static ERL_NIF_TERM
 encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {

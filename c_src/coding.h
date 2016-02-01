@@ -32,6 +32,7 @@ using namespace std;
 class Coding {
     public:
         Coding(int _k, int _m, int _w, ErlNifEnv* _env) : k(_k), m(_m), w(_w), env(_env) {};
+        virtual ~Coding() {};
 
         virtual vector<ERL_NIF_TERM> doEncode(ERL_NIF_TERM dataBin) = 0;
         virtual ERL_NIF_TERM doDecode(vector<ERL_NIF_TERM> blockList, vector<int> blockIdList, size_t dataSize) = 0;
