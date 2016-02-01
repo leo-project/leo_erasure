@@ -31,6 +31,7 @@ using namespace std;
 #include "cauchycoding.h"
 #include "rscoding.h"
 #include "irscoding.h"
+#include "galois.h"
 
 typedef enum {
     INVALID_CODING = -1,
@@ -116,6 +117,14 @@ static ERL_NIF_TERM errTuple(ErlNifEnv *env,const char* message) {
     ERL_NIF_TERM error = enif_make_atom(env, "error");
     ERL_NIF_TERM reason = enif_make_string(env, message, ERL_NIF_LATIN1);
     return enif_make_tuple2(env, error, reason);
+}
+
+ERL_NIF_TERM
+gf_init(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    if (galois_init_default_field_noalloc(8)) return errTuple(env, "Galois Initialization Failed! w=8");
+    if (galois_init_default_field_noalloc(16)) return errTuple(env, "Galois Initialization Failed! w=16");
+    if (galois_init_default_field_noalloc(32)) return errTuple(env, "Galois Initialization Failed! w=32");
+    return enif_make_atom(env, "ok");
 }
 
 static ERL_NIF_TERM
@@ -335,6 +344,7 @@ repair(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
 }
 
 static ErlNifFunc nif_funcs[] = {
+    {"gf_init",0, gf_init},
     {"encode", 4, encode},
     {"decode", 5, decode},
     {"repair", 5, repair}
