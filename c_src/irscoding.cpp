@@ -58,6 +58,7 @@ vector<ERL_NIF_TERM> IRSCoding::doEncode(ERL_NIF_TERM dataBin) {
     }
     ErlNifBinary tmp;
     enif_alloc_binary((k + m - filled) * blockSize, &tmp);
+    memset(tmp.data, 0, (k + m - filled) * blockSize);
     memcpy(tmp.data, data.data + offset, remain);
     offset = 0;
     for(int i = filled; i < k + m; ++i, offset += blockSize) {

@@ -62,6 +62,7 @@ vector<ERL_NIF_TERM> LiberationCoding::doEncode(ERL_NIF_TERM dataBin) {
     enif_alloc_binary((k + m - filled) * blockSize + 16, &tmp);
     size_t align = (((size_t)data.data & 0x0f) - ((size_t)tmp.data & 0x0f) + 16) & 0x0f;
     char* alignedHead = (char*)tmp.data + align;
+    memset(alignedHead, 0, (k + m - filled) * blockSize);
     memcpy(alignedHead, data.data + filled * blockSize, dataSize - filled * blockSize);
     offset = 0;
     for(int i = filled; i < k + m; ++i, offset += blockSize) {
