@@ -24,7 +24,6 @@
 
 #include "rscoding.h"
 #include "jerasure.h"
-#include "jerasure_mod.h"
 #include "reed_sol.h"
 
 void RSCoding::checkParams() {

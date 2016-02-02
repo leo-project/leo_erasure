@@ -24,10 +24,8 @@
 
 #include "irscoding.h"
 #include "erasure_code.h"
-#include "jerasure.h"
-#include "jerasure_mod.h"
-#include "reed_sol.h"
 #include <iostream>
+#include <stdint.h>
 
 using namespace std;
 
