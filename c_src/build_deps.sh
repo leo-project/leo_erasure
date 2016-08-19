@@ -59,7 +59,7 @@ case "$1" in
         if [ ! -d isa-l/.libs ]; then
             git clone https://github.com/leo-project/isa-l.git
             cd isa-l
-            ($CONFIG && $MAKE)
+            ($LIBTOOLIZE && autoreconf && $CONFIG && $MAKE)
         fi
         ;;
 
@@ -80,7 +80,7 @@ case "$1" in
         if [ ! -d isa-l/.libs ]; then
             git clone https://github.com/leo-project/isa-l.git
             cd isa-l
-            ($CONFIG && $MAKE)
+            ($LIBTOOLIZE && autoreconf && $CONFIG && $MAKE)
         fi
         ;;
 esac
