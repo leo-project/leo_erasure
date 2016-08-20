@@ -53,6 +53,8 @@ case "$1" in
         if [ ! -d jerasure/src/.libs ]; then
             git clone https://github.com/leo-project/jerasure.git
             cd jerasure
+            ## @TEST - https://github.com/leo-project/leo_erasure/issues/2
+            git checkout 'feature/ubuntu1604-support'
             ($LIBTOOLIZE && autoreconf --install && ./configure LDFLAGS=-L$GFP/src/.libs/ CPPFLAGS=-I$GFP/include && $MAKE)
             cd ..
         fi
