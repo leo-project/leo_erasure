@@ -31,7 +31,7 @@ void LiberationCoding::checkParams() {
         throw std::invalid_argument("Invalid Coding Parameters (m = 2)");
     if (k > w)
         throw std::invalid_argument("Invalid Coding Parameters (k <= w)");
-	if (w <= 2 || !(w%2) || !is_prime(w))
+    if (w <= 2 || !(w%2) || !is_prime(w))
         throw std::invalid_argument("Invalid Coding Parameters (w is prime)");
 }
 

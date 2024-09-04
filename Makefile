@@ -22,4 +22,4 @@ clean:
 distclean:
 	@$(REBAR) clean
 	@rm -rf c_src/*.o
-	@rm -rf _build/ priv/ blocks/ .eunit/ rebar.lock
+	@rm -rf _build/ priv/ blocks/ rebar.lock

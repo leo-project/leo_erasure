@@ -25,7 +25,7 @@ ifeq ($(UNAME_SYS), Darwin)
 else ifeq ($(UNAME_SYS), FreeBSD)
 	CC ?= cc
 	CFLAGS ?= -O3 -std=c99 -finline-functions -Wall -Wmissing-prototypes
-	CXXFLAGS ?= -O3 -finline-functions -Wall
+	CXXFLAGS ?= -O3 -finline-functions -Wall -Wno-vla-cxx-extension
 	LDFLAGS ?= -lstdc++
 	LDFLAGS += gf-complete/src/.libs/*.o jerasure/src/.libs/*.o isa-l/.libs/libisal.a
 else ifeq ($(UNAME_SYS), Linux)

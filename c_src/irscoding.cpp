@@ -32,7 +32,7 @@ using namespace std;
 void IRSCoding::checkParams() {
     if (k <= 0 || m <= 0 || w <= 0)
         throw std::invalid_argument("Invalid Coding Parameters");
-	if (w != 8)
+    if (w != 8)
         throw std::invalid_argument("Invalid Coding Parameters (w = 8)");
 }
 
