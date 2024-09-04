@@ -91,7 +91,7 @@ ERL_NIF_TERM IRSCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> blo
         throw std::invalid_argument("Blocks should be unique");
     }
 
-    size_t blockSize;
+    size_t blockSize = 0;
     unsigned char* availBlocks[k + m];
 
     ErlNifBinary blocks[k + m];
@@ -147,7 +147,7 @@ vector<ERL_NIF_TERM> IRSCoding::doRepair(vector<ERL_NIF_TERM> blockList, vector<
         throw std::invalid_argument("Blocks should be unique");
     }
 
-    size_t blockSize;
+    size_t blockSize = 0;
     unsigned char* availBlocks[k + m];
 
     ErlNifBinary blocks[k + m];
