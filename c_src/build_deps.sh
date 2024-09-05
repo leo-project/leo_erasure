@@ -29,11 +29,16 @@ fi
 # (code from github.com/tuncer/re2/c_src/build_deps.sh
 which gmake 1>/dev/null 2>/dev/null && MAKE=gmake
 MAKE=${MAKE:-make}
+if [ `uname` = 'FreeBSD' -a "$MAKE" = 'make' ]; then
+    echo "WARNING: make may not work for some libs, install gmake."
+fi
 
 which glibtoolize 1>/dev/null 2>/dev/null && LIBTOOLIZE=glibtoolize
 LIBTOOLIZE=${LIBTOOLIZE:-libtoolize}
 
-# Changed "make" to $MAKE
+if [ `uname` = 'FreeBSD' ]; then
+    CONFIG="$CONFIG CFLAGS=-fPIC"
+fi
 
 case "$1" in
     clean)
@@ -60,6 +65,7 @@ case "$1" in
             git clone -b v2.31.0 -c advice.detachedHead=false https://github.com/intel/isa-l.git
             cd isa-l
             (./autogen.sh && $CONFIG && $MAKE)
+            cd ..
         fi
         ;;
 esac

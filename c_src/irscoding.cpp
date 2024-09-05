@@ -32,7 +32,7 @@ using namespace std;
 void IRSCoding::checkParams() {
     if (k <= 0 || m <= 0 || w <= 0)
         throw std::invalid_argument("Invalid Coding Parameters");
-	if (w != 8)
+    if (w != 8)
         throw std::invalid_argument("Invalid Coding Parameters (w = 8)");
 }
 
@@ -91,7 +91,7 @@ ERL_NIF_TERM IRSCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> blo
         throw std::invalid_argument("Blocks should be unique");
     }
 
-    size_t blockSize;
+    size_t blockSize = 0;
     unsigned char* availBlocks[k + m];
 
     ErlNifBinary blocks[k + m];
@@ -147,7 +147,7 @@ vector<ERL_NIF_TERM> IRSCoding::doRepair(vector<ERL_NIF_TERM> blockList, vector<
         throw std::invalid_argument("Blocks should be unique");
     }
 
-    size_t blockSize;
+    size_t blockSize = 0;
     unsigned char* availBlocks[k + m];
 
     ErlNifBinary blocks[k + m];

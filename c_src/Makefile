@@ -21,16 +21,19 @@ ifeq ($(UNAME_SYS), Darwin)
 	CFLAGS ?= -O3 -std=c99 -finline-functions -Wall -Wmissing-prototypes
 	CXXFLAGS ?= -O3 -finline-functions -Wall
 	LDFLAGS ?= -flat_namespace -undefined suppress
+	LDFLAGS += gf-complete/src/.libs/*.o jerasure/src/.libs/*.o -Wl,-load_hidden,isa-l/.libs/libisal.a
 else ifeq ($(UNAME_SYS), FreeBSD)
 	CC ?= cc
 	CFLAGS ?= -O3 -std=c99 -finline-functions -Wall -Wmissing-prototypes
-	CXXFLAGS ?= -O3 -finline-functions -Wall
+	CXXFLAGS ?= -O3 -finline-functions -Wall -Wno-vla-cxx-extension
 	LDFLAGS ?= -lstdc++
+	LDFLAGS += gf-complete/src/.libs/*.o jerasure/src/.libs/*.o isa-l/.libs/libisal.a
 else ifeq ($(UNAME_SYS), Linux)
 	CC ?= gcc
 	CFLAGS ?= -O3 -std=c99 -finline-functions -Wall -Wmissing-prototypes
 	CXXFLAGS ?= -O3 -finline-functions -Wall
 	LDFLAGS ?= -lstdc++
+	LDFLAGS += gf-complete/src/.libs/*.o jerasure/src/.libs/*.o isa-l/.libs/libisal.a
 endif
 
 CFLAGS += -fPIC -I $(ERTS_INCLUDE_DIR) -I $(ERL_INTERFACE_INCLUDE_DIR)
@@ -38,7 +41,6 @@ CXXFLAGS += -fPIC -I $(ERTS_INCLUDE_DIR) -I $(ERL_INTERFACE_INCLUDE_DIR)
 CXXFLAGS += -I isa-l/include -I jerasure/include -I gf-complete/include
 
 LDLIBS += -L $(ERL_INTERFACE_LIB_DIR) -lei
-LDFLAGS += gf-complete/src/.libs/*.o jerasure/src/.libs/*.o -Wl,-load_hidden,isa-l/.libs/libisal.a
 LDFLAGS += -shared
 
 # Verbosity.

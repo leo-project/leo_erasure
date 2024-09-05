@@ -97,7 +97,7 @@ ERL_NIF_TERM CauchyCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<int> 
         throw std::invalid_argument("Blocks should be unique");
     }
 
-    size_t blockSize;
+    size_t blockSize = 0;
 
     ErlNifBinary blocks[k + m];
     for(size_t i = 0; i < blockIdList.size(); ++i) {
@@ -165,7 +165,7 @@ vector<ERL_NIF_TERM> CauchyCoding::doRepair(vector<ERL_NIF_TERM> blockList, vect
         throw std::invalid_argument("Blocks should be unique");
     }
 
-    size_t blockSize;
+    size_t blockSize = 0;
 
     ErlNifBinary blocks[k + m];
     for(size_t i = 0; i < blockIdList.size(); ++i) {

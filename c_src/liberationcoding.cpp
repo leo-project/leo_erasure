@@ -31,7 +31,7 @@ void LiberationCoding::checkParams() {
         throw std::invalid_argument("Invalid Coding Parameters (m = 2)");
     if (k > w)
         throw std::invalid_argument("Invalid Coding Parameters (k <= w)");
-	if (w <= 2 || !(w%2) || !is_prime(w))
+    if (w <= 2 || !(w%2) || !is_prime(w))
         throw std::invalid_argument("Invalid Coding Parameters (w is prime)");
 }
 
@@ -95,7 +95,7 @@ ERL_NIF_TERM LiberationCoding::doDecode(vector<ERL_NIF_TERM> blockList, vector<i
         throw std::invalid_argument("Blocks should be unique");
     }
 
-    size_t blockSize;
+    size_t blockSize = 0;
 
     ErlNifBinary blocks[k + m];
     for(size_t i = 0; i < blockIdList.size(); ++i) {
@@ -162,7 +162,7 @@ vector<ERL_NIF_TERM> LiberationCoding::doRepair(vector<ERL_NIF_TERM> blockList, 
         throw std::invalid_argument("Blocks should be unique");
     }
 
-    size_t blockSize;
+    size_t blockSize = 0;
 
     ErlNifBinary blocks[k + m];
     for(size_t i = 0; i < blockIdList.size(); ++i) {
